@@ -108,8 +108,8 @@ export async function registerNewUser(raw: RegisterFormInput): Promise<RegisterR
 	let userId: number;
 
 	try {
-		userId = await db.transaction(async (tx) => {
-			const [u] = await tx
+		userId = db.transaction((tx) => {
+			const u = tx
 				.insert(users)
 				.values({
 					name,
@@ -121,11 +121,12 @@ export async function registerNewUser(raw: RegisterFormInput): Promise<RegisterR
 					createdAt: now,
 					updatedAt: now
 				})
-				.returning({ id: users.id });
+				.returning({ id: users.id })
+				.get();
 
 			const uid = u.id;
 
-			const [org] = await tx
+			const org = tx
 				.insert(organizations)
 				.values({
 					name: orgName,
@@ -133,15 +134,18 @@ export async function registerNewUser(raw: RegisterFormInput): Promise<RegisterR
 					createdAt: now,
 					updatedAt: now
 				})
-				.returning({ id: organizations.id });
+				.returning({ id: organizations.id })
+				.get();
 
-			await tx.insert(memberships).values({
-				organizationId: org.id,
-				userId: uid,
-				roles: rolesJson,
-				createdAt: now,
-				updatedAt: now
-			});
+			tx.insert(memberships)
+				.values({
+					organizationId: org.id,
+					userId: uid,
+					roles: rolesJson,
+					createdAt: now,
+					updatedAt: now
+				})
+				.run();
 
 			return uid;
 		});
