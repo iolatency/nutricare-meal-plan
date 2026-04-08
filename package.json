@@ -1,32 +1,46 @@
 {
 	"name": "nutricare-meal-plan",
-	"private": true,
 	"version": "0.0.1",
+	"private": true,
 	"type": "module",
+	"description": "NutriCare meal planning — SvelteKit, Drizzle, SQLite",
+	"engines": {
+		"node": ">=22"
+	},
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
+		"postinstall": "node scripts/ensure-uuid-cjs-shim.mjs",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
 		"db:push": "drizzle-kit push",
+		"db:push:force": "drizzle-kit push --force",
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "drizzle-kit migrate",
-		"db:studio": "drizzle-kit studio"
+		"db:studio": "drizzle-kit studio",
+		"db:seed-dev-user": "tsx scripts/seed-dev-user.ts",
+		"db:import-v0": "tsx scripts/import-nutricare-v0.ts"
+	},
+	"dependencies": {
+		"bcryptjs": "^3.0.3",
+		"better-sqlite3": "^12.8.0",
+		"resend": "^6.10.0",
+		"uuid": "9.0.1"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^2.0.3",
 		"@eslint/js": "^10.0.1",
-		"@libsql/client": "^0.17.0",
 		"@sveltejs/adapter-node": "^5.5.2",
 		"@sveltejs/kit": "^2.50.2",
 		"@sveltejs/vite-plugin-svelte": "^6.2.4",
 		"@tailwindcss/forms": "^0.5.11",
 		"@tailwindcss/typography": "^0.5.19",
 		"@tailwindcss/vite": "^4.1.18",
+		"@types/bcryptjs": "^2.4.6",
 		"@types/node": "^22",
 		"drizzle-kit": "^0.31.8",
 		"drizzle-orm": "^0.45.1",
@@ -40,9 +54,13 @@
 		"svelte": "^5.54.0",
 		"svelte-check": "^4.4.2",
 		"tailwindcss": "^4.1.18",
+		"tsx": "^4.21.0",
 		"typescript": "^5.9.3",
 		"typescript-eslint": "^8.57.0",
 		"vite": "^7.3.1",
-		"vite-plugin-devtools-json": "^1.0.0"
+		"@types/better-sqlite3": "^7.6.13"
+	},
+	"overrides": {
+		"uuid": "9.0.1"
 	}
 }
