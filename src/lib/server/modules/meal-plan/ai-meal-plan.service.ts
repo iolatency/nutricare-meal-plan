@@ -122,7 +122,11 @@ export type AiMealPlanRequestBody = {
 };
 
 export type AiMealPlanResult =
-	| { ok: true; status: 200; body: { success: true; plan: { days: MealDay[] }; partial: boolean; failedDates?: string[] } }
+	| {
+			ok: true;
+			status: 200;
+			body: { success: true; plan: { days: MealDay[] }; partial: boolean; failedDates?: string[] };
+	  }
 	| { ok: false; status: number; body: { success: false; error: string } };
 
 export async function generateAiMealPlan(body: AiMealPlanRequestBody): Promise<AiMealPlanResult> {
@@ -140,7 +144,11 @@ export async function generateAiMealPlan(body: AiMealPlanRequestBody): Promise<A
 		dates
 	} = body;
 
-	const session = db.select().from(mealPlanSessions).where(eq(mealPlanSessions.id, sessionId)).get();
+	const session = db
+		.select()
+		.from(mealPlanSessions)
+		.where(eq(mealPlanSessions.id, sessionId))
+		.get();
 	if (!session) {
 		return { ok: false, status: 404, body: { success: false, error: 'Session not found' } };
 	}
@@ -151,12 +159,15 @@ export async function generateAiMealPlan(body: AiMealPlanRequestBody): Promise<A
 		.where(eq(patientDiagnoses.clientId, session.clientId))
 		.all();
 
-	const diagText = [...diagnoses, ...patientDiags.map((d) => `${d.name} (${d.severity})`)].join(', ');
+	const diagText = [...diagnoses, ...patientDiags.map((d) => `${d.name} (${d.severity})`)].join(
+		', '
+	);
 
 	const constraints: string[] = [];
 	constraints.push(`Target calories: ${targetCalories} kcal/day.`);
 	constraints.push(`Macro ratio: Carbs ${macros.c}%, Protein ${macros.p}%, Fat ${macros.f}%.`);
-	if (excludedFoods.length) constraints.push(`STRICTLY EXCLUDE these foods: ${excludedFoods.join(', ')}.`);
+	if (excludedFoods.length)
+		constraints.push(`STRICTLY EXCLUDE these foods: ${excludedFoods.join(', ')}.`);
 	if (diagText) constraints.push(`Patient diagnoses: ${diagText}.`);
 	if (tags.length) constraints.push(`Dietary tags: ${tags.join(', ')}.`);
 	if (dietTypes.length) constraints.push(`Diet types: ${dietTypes.join(', ')}.`);
@@ -197,7 +208,7 @@ export async function generateAiMealPlan(body: AiMealPlanRequestBody): Promise<A
 				parsed = parseDeepSeekJson(content) as { days: MealDay[] };
 			} catch (e) {
 				const msg = e instanceof Error ? e.message : String(e);
-				throw new Error(`Invalid JSON from model: ${msg}`);
+				throw new Error(`Invalid JSON from model: ${msg}`, { cause: e });
 			}
 			if (!parsed?.days?.[0]) throw new Error('Empty or malformed response');
 			parsed.days[0].date = date;

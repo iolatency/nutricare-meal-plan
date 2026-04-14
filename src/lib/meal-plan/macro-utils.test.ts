@@ -118,11 +118,7 @@ describe('computePlanTotals', () => {
 	const emptyGrid: PlanGrid = {};
 
 	it('returns all-zero totals for an empty plan', () => {
-		const { totals } = computePlanTotals(
-			emptyGrid,
-			new Map(),
-			new Map()
-		);
+		const { totals } = computePlanTotals(emptyGrid, new Map(), new Map());
 		expect(totals).toEqual({ calories: 0, protein: 0, carbs: 0, fat: 0 });
 	});
 
@@ -150,9 +146,7 @@ describe('computePlanTotals', () => {
 				supplement: { supplementId: 10 }
 			}
 		};
-		const supplementLookup = new Map([
-			[10, { totalKcal: 200, protein: 15, carbs: 25, fat: 5 }]
-		]);
+		const supplementLookup = new Map([[10, { totalKcal: 200, protein: 15, carbs: 25, fat: 5 }]]);
 		const { totals } = computePlanTotals(grid, new Map(), supplementLookup);
 		expect(totals.calories).toBe(200);
 		expect(totals.protein).toBe(15);
@@ -164,9 +158,7 @@ describe('computePlanTotals', () => {
 				lunch: { foodItemId: 5 }
 			}
 		};
-		const foodLookup = new Map([
-			[5, { calories: 350, protein: 25, carbs: 45, fat: 8 }]
-		]);
+		const foodLookup = new Map([[5, { calories: 350, protein: 25, carbs: 45, fat: 8 }]]);
 		const { totals } = computePlanTotals(grid, new Map(), new Map(), foodLookup);
 		expect(totals.calories).toBe(350);
 	});

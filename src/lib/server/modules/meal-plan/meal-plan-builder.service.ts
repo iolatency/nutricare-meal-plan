@@ -16,10 +16,7 @@ import {
 import { eq, ne, desc, and, inArray } from 'drizzle-orm';
 import { error, fail, type ActionFailure } from '@sveltejs/kit';
 
-export async function loadMealPlanBuilderPage(params: {
-	sessionId: number;
-	dietitianId: number;
-}) {
+export async function loadMealPlanBuilderPage(params: { sessionId: number; dietitianId: number }) {
 	const { sessionId, dietitianId } = params;
 
 	const session = db
@@ -56,7 +53,12 @@ export async function loadMealPlanBuilderPage(params: {
 
 		const dayIds = days.map((d) => d.id);
 		const allMeals = dayIds.length
-			? db.select().from(meals).where(inArray(meals.mealDayId, dayIds)).orderBy(meals.sortOrder).all()
+			? db
+					.select()
+					.from(meals)
+					.where(inArray(meals.mealDayId, dayIds))
+					.orderBy(meals.sortOrder)
+					.all()
 			: [];
 
 		const mealsByDay = new Map<number, typeof allMeals>();
@@ -98,7 +100,10 @@ export async function loadMealPlanBuilderPage(params: {
 		: [];
 
 	const ingredientsByRecipe = new Map<number, string[]>();
-	const ingredientDetailsByRecipe = new Map<number, Array<{ name: string; quantity: number; unit: string }>>();
+	const ingredientDetailsByRecipe = new Map<
+		number,
+		Array<{ name: string; quantity: number; unit: string }>
+	>();
 	for (const ing of allIngredients) {
 		const names = ingredientsByRecipe.get(ing.recipeId) ?? [];
 		const details = ingredientDetailsByRecipe.get(ing.recipeId) ?? [];
@@ -259,7 +264,10 @@ export async function actionSavePlan(params: {
 
 	let planGrid: Record<
 		string,
-		Record<string, { recipeId?: number; supplementId?: number; foodItemId?: number; aiMeal?: unknown }>
+		Record<
+			string,
+			{ recipeId?: number; supplementId?: number; foodItemId?: number; aiMeal?: unknown }
+		>
 	>;
 	try {
 		planGrid = JSON.parse(planGridRaw);
@@ -302,7 +310,9 @@ export async function actionSavePlan(params: {
 	const dayEntries = Object.entries(planGrid)
 		.map(([rawKey, slots]) => {
 			if (!slots) return null;
-			const validSlots = Object.fromEntries(Object.entries(slots).filter(([, s]) => slotHasContent(s)));
+			const validSlots = Object.fromEntries(
+				Object.entries(slots).filter(([, s]) => slotHasContent(s))
+			);
 			if (Object.keys(validSlots).length === 0) return null;
 
 			if (ymdPattern.test(rawKey)) {
@@ -375,13 +385,20 @@ export async function actionSavePlan(params: {
 				.where(eq(mealPlanSessions.id, sessionId))
 				.run();
 
-			const oldPlans = tx.select({ id: mealPlans.id }).from(mealPlans).where(eq(mealPlans.sessionId, sessionId)).all();
+			const oldPlans = tx
+				.select({ id: mealPlans.id })
+				.from(mealPlans)
+				.where(eq(mealPlans.sessionId, sessionId))
+				.all();
 
 			for (const old of oldPlans) {
 				tx.delete(mealPlans).where(eq(mealPlans.id, old.id)).run();
 			}
 
-			const newPlan = tx.insert(mealPlans).values({ sessionId, planType, builderConfig, recommendation }).run();
+			const newPlan = tx
+				.insert(mealPlans)
+				.values({ sessionId, planType, builderConfig, recommendation })
+				.run();
 
 			const planId = Number(newPlan.lastInsertRowid);
 

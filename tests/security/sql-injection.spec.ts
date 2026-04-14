@@ -15,12 +15,12 @@ const SQL_PAYLOADS = [
 	"' OR 1=1--",
 	"'; DROP TABLE users;--",
 	"' UNION SELECT id, email, password FROM users--",
-	"1; SELECT * FROM auth_sessions;--",
+	'1; SELECT * FROM auth_sessions;--',
 	"' OR 'x'='x",
 	"admin'--",
 	"' OR 1=1 LIMIT 1--",
 	"') OR ('1'='1",
-	"1 AND 1=2 UNION SELECT password, email, name FROM users--",
+	'1 AND 1=2 UNION SELECT password, email, name FROM users--',
 	"'; INSERT INTO users (email,name) VALUES ('pwned@evil.com','hacker');--",
 	"' AND SLEEP(5)--"
 ];
@@ -74,7 +74,11 @@ test.describe('SQL Injection — Login endpoint', () => {
 			}
 		});
 		let text = '';
-		try { text = await res.text(); } catch { /* empty */ }
+		try {
+			text = await res.text();
+		} catch {
+			/* empty */
+		}
 		// Must not expose raw SQL error messages
 		expect(text.toLowerCase()).not.toContain('sqlite_error');
 		expect(text.toLowerCase()).not.toContain('syntax error');
@@ -91,15 +95,15 @@ test.describe('SQL Injection — Food search endpoints', () => {
 
 	for (const payload of SQL_PAYLOADS) {
 		test(`/api/foods/search with "${payload.slice(0, 40)}" does not 5xx`, async ({ page }) => {
-			const res = await page.request.get(
-				`/api/foods/search?q=${encodeURIComponent(payload)}`
-			);
+			const res = await page.request.get(`/api/foods/search?q=${encodeURIComponent(payload)}`);
 			expect(res.status()).toBeLessThan(500);
 		});
 	}
 
 	for (const payload of SQL_PAYLOADS.slice(0, 5)) {
-		test(`/api/foods/local-search with "${payload.slice(0, 40)}" does not 5xx`, async ({ page }) => {
+		test(`/api/foods/local-search with "${payload.slice(0, 40)}" does not 5xx`, async ({
+			page
+		}) => {
 			const res = await page.request.get(
 				`/api/foods/local-search?q=${encodeURIComponent(payload)}`
 			);
@@ -109,9 +113,7 @@ test.describe('SQL Injection — Food search endpoints', () => {
 
 	test('UNION injection in food search does not return password hashes', async ({ page }) => {
 		const payload = "' UNION SELECT id, password, email, name FROM users--";
-		const res = await page.request.get(
-			`/api/foods/search?q=${encodeURIComponent(payload)}`
-		);
+		const res = await page.request.get(`/api/foods/search?q=${encodeURIComponent(payload)}`);
 		expect(res.status()).toBeLessThan(500);
 		if (res.status() === 200) {
 			const text = (await res.text()).toLowerCase();
@@ -126,7 +128,11 @@ test.describe('SQL Injection — Food search endpoints', () => {
 			`/api/foods/local-search?q=${encodeURIComponent("'; SELECT * FROM auth_sessions;--")}`
 		);
 		let text = '';
-		try { text = await res.text(); } catch { /* empty */ }
+		try {
+			text = await res.text();
+		} catch {
+			/* empty */
+		}
 		expect(text.toLowerCase()).not.toContain('sqlite_error');
 		expect(text.toLowerCase()).not.toContain('syntax error');
 	});
@@ -169,9 +175,7 @@ test.describe('SQL Injection — Supplements endpoint', () => {
 	});
 
 	test('DELETE supplement with injection in path does not 5xx', async ({ page }) => {
-		const res = await page.request.delete(
-			`/api/supplements/${encodeURIComponent("1 OR 1=1")}`
-		);
+		const res = await page.request.delete(`/api/supplements/${encodeURIComponent('1 OR 1=1')}`);
 		// Should be 400 or 404 — not 500
 		expect(res.status()).toBeLessThan(500);
 	});
@@ -195,21 +199,26 @@ test.describe('SQL Injection — Chat endpoints', () => {
 
 	test('chat message body with SQL injection payload does not 5xx', async ({ page }) => {
 		const convsRes = await page.request.get('/api/chat/conversations');
-		if (convsRes.status() !== 200) { test.skip(); return; }
+		if (convsRes.status() !== 200) {
+			test.skip();
+			return;
+		}
 		const convs = await convsRes.json();
-		if (!Array.isArray(convs) || convs.length === 0) { test.skip(); return; }
+		if (!Array.isArray(convs) || convs.length === 0) {
+			test.skip();
+			return;
+		}
 
 		for (const payload of SQL_PAYLOADS.slice(0, 4)) {
-			const res = await page.request.post(
-				`/api/chat/conversations/${convs[0].id}/messages`,
-				{ data: { content: payload } }
-			);
+			const res = await page.request.post(`/api/chat/conversations/${convs[0].id}/messages`, {
+				data: { content: payload }
+			});
 			expect(res.status()).toBeLessThan(500);
 		}
 	});
 
 	test('conversation ID path traversal does not 5xx', async ({ page }) => {
-		const maliciousIds = ["1 OR 1=1", "1;SELECT 1", "' OR '1'='1"];
+		const maliciousIds = ['1 OR 1=1', '1;SELECT 1', "' OR '1'='1"];
 		for (const id of maliciousIds) {
 			const res = await page.request.get(
 				`/api/chat/conversations/${encodeURIComponent(id)}/messages`

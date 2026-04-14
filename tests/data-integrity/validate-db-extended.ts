@@ -40,9 +40,10 @@ function check(name: string, passed: boolean, detail?: string) {
 /** Returns true if a table exists in the db. */
 function tableExists(name: string): boolean {
 	const row = db
-		.prepare<[string], { cnt: number }>(
-			`SELECT COUNT(*) as cnt FROM sqlite_master WHERE type='table' AND name=?`
-		)
+		.prepare<
+			[string],
+			{ cnt: number }
+		>(`SELECT COUNT(*) as cnt FROM sqlite_master WHERE type='table' AND name=?`)
 		.get(name) as { cnt: number } | undefined;
 	return (row?.cnt ?? 0) > 0;
 }
@@ -57,9 +58,10 @@ console.log('\n=== Organizations & Memberships ===');
 
 if (tableExists('organizations')) {
 	const nullOrgName = db
-		.prepare<[], { cnt: number }>(
-			`SELECT COUNT(*) as cnt FROM organizations WHERE name IS NULL OR name = ''`
-		)
+		.prepare<
+			[],
+			{ cnt: number }
+		>(`SELECT COUNT(*) as cnt FROM organizations WHERE name IS NULL OR name = ''`)
 		.get()!;
 	check('No organizations with null/empty name', nullOrgName.cnt === 0, `${nullOrgName.cnt} found`);
 
@@ -70,7 +72,11 @@ if (tableExists('organizations')) {
          WHERE organization_id NOT IN (SELECT id FROM organizations)`
 			)
 			.get()!;
-		check('No orphaned memberships (org FK)', orphanedMembers.cnt === 0, `${orphanedMembers.cnt} orphans`);
+		check(
+			'No orphaned memberships (org FK)',
+			orphanedMembers.cnt === 0,
+			`${orphanedMembers.cnt} orphans`
+		);
 
 		const memberUserOrphans = db
 			.prepare<[], { cnt: number }>(
@@ -78,14 +84,23 @@ if (tableExists('organizations')) {
          WHERE user_id NOT IN (SELECT id FROM users)`
 			)
 			.get()!;
-		check('No orphaned memberships (user FK)', memberUserOrphans.cnt === 0, `${memberUserOrphans.cnt} orphans`);
+		check(
+			'No orphaned memberships (user FK)',
+			memberUserOrphans.cnt === 0,
+			`${memberUserOrphans.cnt} orphans`
+		);
 
 		const nullRoles = db
-			.prepare<[], { cnt: number }>(
-				`SELECT COUNT(*) as cnt FROM memberships WHERE roles IS NULL OR roles = ''`
-			)
+			.prepare<
+				[],
+				{ cnt: number }
+			>(`SELECT COUNT(*) as cnt FROM memberships WHERE roles IS NULL OR roles = ''`)
 			.get()!;
-		check('All memberships have roles column set', nullRoles.cnt === 0, `${nullRoles.cnt} with null roles`);
+		check(
+			'All memberships have roles column set',
+			nullRoles.cnt === 0,
+			`${nullRoles.cnt} with null roles`
+		);
 
 		const dupMemberships = db
 			.prepare<[], { cnt: number }>(
@@ -95,7 +110,11 @@ if (tableExists('organizations')) {
          )`
 			)
 			.get()!;
-		check('No duplicate (org, user) memberships', dupMemberships.cnt === 0, `${dupMemberships.cnt} duplicates`);
+		check(
+			'No duplicate (org, user) memberships',
+			dupMemberships.cnt === 0,
+			`${dupMemberships.cnt} duplicates`
+		);
 	}
 } else {
 	skip('organizations');
@@ -108,9 +127,10 @@ console.log('\n=== Food Categories & Items ===');
 
 if (tableExists('food_categories')) {
 	const nullCatNames = db
-		.prepare<[], { cnt: number }>(
-			`SELECT COUNT(*) as cnt FROM food_categories WHERE name IS NULL OR name = ''`
-		)
+		.prepare<
+			[],
+			{ cnt: number }
+		>(`SELECT COUNT(*) as cnt FROM food_categories WHERE name IS NULL OR name = ''`)
 		.get()!;
 	check('All food categories have a name', nullCatNames.cnt === 0, `${nullCatNames.cnt} unnamed`);
 } else {
@@ -125,7 +145,11 @@ if (tableExists('food_items')) {
          AND category_id NOT IN (SELECT id FROM food_categories)`
 		)
 		.get()!;
-	check('No food_items with invalid category_id FK', orphanedFoodItems.cnt === 0, `${orphanedFoodItems.cnt} invalid FKs`);
+	check(
+		'No food_items with invalid category_id FK',
+		orphanedFoodItems.cnt === 0,
+		`${orphanedFoodItems.cnt} invalid FKs`
+	);
 
 	const orphanedCreator = db
 		.prepare<[], { cnt: number }>(
@@ -134,21 +158,28 @@ if (tableExists('food_items')) {
          AND created_by NOT IN (SELECT id FROM users)`
 		)
 		.get()!;
-	check('No food_items with invalid created_by FK', orphanedCreator.cnt === 0, `${orphanedCreator.cnt} invalid FKs`);
+	check(
+		'No food_items with invalid created_by FK',
+		orphanedCreator.cnt === 0,
+		`${orphanedCreator.cnt} invalid FKs`
+	);
 
 	const nullFoodName = db
-		.prepare<[], { cnt: number }>(
-			`SELECT COUNT(*) as cnt FROM food_items WHERE name IS NULL OR name = ''`
-		)
+		.prepare<
+			[],
+			{ cnt: number }
+		>(`SELECT COUNT(*) as cnt FROM food_items WHERE name IS NULL OR name = ''`)
 		.get()!;
 	check('All food_items have a name', nullFoodName.cnt === 0, `${nullFoodName.cnt} unnamed`);
 
 	const negativeCalories = db
-		.prepare<[], { cnt: number }>(
-			`SELECT COUNT(*) as cnt FROM food_items WHERE calories < 0`
-		)
+		.prepare<[], { cnt: number }>(`SELECT COUNT(*) as cnt FROM food_items WHERE calories < 0`)
 		.get()!;
-	check('No food_items with negative calories', negativeCalories.cnt === 0, `${negativeCalories.cnt} invalid`);
+	check(
+		'No food_items with negative calories',
+		negativeCalories.cnt === 0,
+		`${negativeCalories.cnt} invalid`
+	);
 
 	// Unique (external_id, created_by) — only one Edamam food per user
 	const dupExternalFoodPerUser = db
@@ -160,7 +191,11 @@ if (tableExists('food_items')) {
        )`
 		)
 		.get()!;
-	check('No duplicate (external_id, created_by) in food_items', dupExternalFoodPerUser.cnt === 0, `${dupExternalFoodPerUser.cnt} violations`);
+	check(
+		'No duplicate (external_id, created_by) in food_items',
+		dupExternalFoodPerUser.cnt === 0,
+		`${dupExternalFoodPerUser.cnt} violations`
+	);
 
 	const invalidSource = db
 		.prepare<[], { cnt: number }>(
@@ -168,7 +203,11 @@ if (tableExists('food_items')) {
        WHERE source NOT IN ('internal', 'edamam', 'custom')`
 		)
 		.get()!;
-	check('food_items.source values are valid', invalidSource.cnt === 0, `${invalidSource.cnt} invalid`);
+	check(
+		'food_items.source values are valid',
+		invalidSource.cnt === 0,
+		`${invalidSource.cnt} invalid`
+	);
 } else {
 	skip('food_items');
 }
@@ -184,7 +223,11 @@ if (tableExists('external_food_catalog')) {
        WHERE provider_food_id IS NULL OR provider_food_id = ''`
 		)
 		.get()!;
-	check('All external_food_catalog rows have provider_food_id', nullProviderFoodId.cnt === 0, `${nullProviderFoodId.cnt} missing`);
+	check(
+		'All external_food_catalog rows have provider_food_id',
+		nullProviderFoodId.cnt === 0,
+		`${nullProviderFoodId.cnt} missing`
+	);
 
 	const dupProviderFood = db
 		.prepare<[], { cnt: number }>(
@@ -195,7 +238,11 @@ if (tableExists('external_food_catalog')) {
        )`
 		)
 		.get()!;
-	check('Unique (provider, provider_food_id) in external_food_catalog', dupProviderFood.cnt === 0, `${dupProviderFood.cnt} duplicates`);
+	check(
+		'Unique (provider, provider_food_id) in external_food_catalog',
+		dupProviderFood.cnt === 0,
+		`${dupProviderFood.cnt} duplicates`
+	);
 } else {
 	skip('external_food_catalog');
 }
@@ -211,7 +258,11 @@ if (tableExists('user_food_imports')) {
        WHERE user_id NOT IN (SELECT id FROM users)`
 		)
 		.get()!;
-	check('No orphaned user_food_imports (user FK)', orphanedUserImports.cnt === 0, `${orphanedUserImports.cnt} orphans`);
+	check(
+		'No orphaned user_food_imports (user FK)',
+		orphanedUserImports.cnt === 0,
+		`${orphanedUserImports.cnt} orphans`
+	);
 
 	if (tableExists('external_food_catalog')) {
 		const orphanedExternal = db
@@ -220,7 +271,11 @@ if (tableExists('user_food_imports')) {
          WHERE external_food_id NOT IN (SELECT id FROM external_food_catalog)`
 			)
 			.get()!;
-		check('No orphaned user_food_imports (external_food_catalog FK)', orphanedExternal.cnt === 0, `${orphanedExternal.cnt} orphans`);
+		check(
+			'No orphaned user_food_imports (external_food_catalog FK)',
+			orphanedExternal.cnt === 0,
+			`${orphanedExternal.cnt} orphans`
+		);
 	}
 
 	if (tableExists('food_items')) {
@@ -231,7 +286,11 @@ if (tableExists('user_food_imports')) {
            AND food_item_id NOT IN (SELECT id FROM food_items)`
 			)
 			.get()!;
-		check('No user_food_imports with invalid food_item_id FK', invalidFoodItemFk.cnt === 0, `${invalidFoodItemFk.cnt} invalid`);
+		check(
+			'No user_food_imports with invalid food_item_id FK',
+			invalidFoodItemFk.cnt === 0,
+			`${invalidFoodItemFk.cnt} invalid`
+		);
 	}
 
 	const dupUserImports = db
@@ -242,7 +301,11 @@ if (tableExists('user_food_imports')) {
        )`
 		)
 		.get()!;
-	check('Unique (user_id, external_food_id) in user_food_imports', dupUserImports.cnt === 0, `${dupUserImports.cnt} duplicates`);
+	check(
+		'Unique (user_id, external_food_id) in user_food_imports',
+		dupUserImports.cnt === 0,
+		`${dupUserImports.cnt} duplicates`
+	);
 } else {
 	skip('user_food_imports');
 }
@@ -258,12 +321,17 @@ if (tableExists('recipes')) {
        WHERE owner_id NOT IN (SELECT id FROM users)`
 		)
 		.get()!;
-	check('No orphaned recipes (owner FK)', orphanedRecipes.cnt === 0, `${orphanedRecipes.cnt} orphans`);
+	check(
+		'No orphaned recipes (owner FK)',
+		orphanedRecipes.cnt === 0,
+		`${orphanedRecipes.cnt} orphans`
+	);
 
 	const nullRecipeName = db
-		.prepare<[], { cnt: number }>(
-			`SELECT COUNT(*) as cnt FROM recipes WHERE name IS NULL OR name = ''`
-		)
+		.prepare<
+			[],
+			{ cnt: number }
+		>(`SELECT COUNT(*) as cnt FROM recipes WHERE name IS NULL OR name = ''`)
 		.get()!;
 	check('All recipes have a name', nullRecipeName.cnt === 0, `${nullRecipeName.cnt} unnamed`);
 
@@ -273,7 +341,11 @@ if (tableExists('recipes')) {
        WHERE source NOT IN ('internal', 'imported', 'ai')`
 		)
 		.get()!;
-	check('recipes.source values are valid', invalidRecipeSource.cnt === 0, `${invalidRecipeSource.cnt} invalid`);
+	check(
+		'recipes.source values are valid',
+		invalidRecipeSource.cnt === 0,
+		`${invalidRecipeSource.cnt} invalid`
+	);
 
 	if (tableExists('recipe_categories')) {
 		const invalidCategoryFk = db
@@ -283,7 +355,11 @@ if (tableExists('recipes')) {
            AND category_id NOT IN (SELECT id FROM recipe_categories)`
 			)
 			.get()!;
-		check('No recipes with invalid category_id FK', invalidCategoryFk.cnt === 0, `${invalidCategoryFk.cnt} invalid`);
+		check(
+			'No recipes with invalid category_id FK',
+			invalidCategoryFk.cnt === 0,
+			`${invalidCategoryFk.cnt} invalid`
+		);
 	}
 } else {
 	skip('recipes');
@@ -297,7 +373,11 @@ if (tableExists('recipe_categories')) {
          AND owner_id NOT IN (SELECT id FROM users)`
 		)
 		.get()!;
-	check('No orphaned recipe_categories (owner FK)', orphanedCategories.cnt === 0, `${orphanedCategories.cnt} orphans`);
+	check(
+		'No orphaned recipe_categories (owner FK)',
+		orphanedCategories.cnt === 0,
+		`${orphanedCategories.cnt} orphans`
+	);
 } else {
 	skip('recipe_categories');
 }
@@ -309,7 +389,11 @@ if (tableExists('recipe_ingredients') && tableExists('recipes')) {
        WHERE recipe_id NOT IN (SELECT id FROM recipes)`
 		)
 		.get()!;
-	check('No orphaned recipe_ingredients (recipe FK)', orphanedIngredients.cnt === 0, `${orphanedIngredients.cnt} orphans`);
+	check(
+		'No orphaned recipe_ingredients (recipe FK)',
+		orphanedIngredients.cnt === 0,
+		`${orphanedIngredients.cnt} orphans`
+	);
 
 	if (tableExists('food_items')) {
 		const invalidFoodFk = db
@@ -319,15 +403,24 @@ if (tableExists('recipe_ingredients') && tableExists('recipes')) {
            AND food_item_id NOT IN (SELECT id FROM food_items)`
 			)
 			.get()!;
-		check('No recipe_ingredients with invalid food_item_id FK', invalidFoodFk.cnt === 0, `${invalidFoodFk.cnt} invalid`);
+		check(
+			'No recipe_ingredients with invalid food_item_id FK',
+			invalidFoodFk.cnt === 0,
+			`${invalidFoodFk.cnt} invalid`
+		);
 	}
 
 	const nullQty = db
-		.prepare<[], { cnt: number }>(
-			`SELECT COUNT(*) as cnt FROM recipe_ingredients WHERE quantity <= 0`
-		)
+		.prepare<
+			[],
+			{ cnt: number }
+		>(`SELECT COUNT(*) as cnt FROM recipe_ingredients WHERE quantity <= 0`)
 		.get()!;
-	check('All recipe_ingredients have positive quantity', nullQty.cnt === 0, `${nullQty.cnt} with quantity <= 0`);
+	check(
+		'All recipe_ingredients have positive quantity',
+		nullQty.cnt === 0,
+		`${nullQty.cnt} with quantity <= 0`
+	);
 } else {
 	skip('recipe_ingredients');
 }
@@ -343,7 +436,11 @@ if (tableExists('meal_plan_sessions')) {
        WHERE status NOT IN ('draft', 'active', 'completed')`
 		)
 		.get()!;
-	check('meal_plan_sessions status values valid', invalidStatus.cnt === 0, `${invalidStatus.cnt} invalid`);
+	check(
+		'meal_plan_sessions status values valid',
+		invalidStatus.cnt === 0,
+		`${invalidStatus.cnt} invalid`
+	);
 
 	const orphanedClient = db
 		.prepare<[], { cnt: number }>(
@@ -351,7 +448,11 @@ if (tableExists('meal_plan_sessions')) {
        WHERE client_id NOT IN (SELECT id FROM users)`
 		)
 		.get()!;
-	check('No orphaned meal_plan_sessions (client FK)', orphanedClient.cnt === 0, `${orphanedClient.cnt} orphans`);
+	check(
+		'No orphaned meal_plan_sessions (client FK)',
+		orphanedClient.cnt === 0,
+		`${orphanedClient.cnt} orphans`
+	);
 
 	const orphanedDietitian = db
 		.prepare<[], { cnt: number }>(
@@ -359,7 +460,11 @@ if (tableExists('meal_plan_sessions')) {
        WHERE dietitian_id NOT IN (SELECT id FROM users)`
 		)
 		.get()!;
-	check('No orphaned meal_plan_sessions (dietitian FK)', orphanedDietitian.cnt === 0, `${orphanedDietitian.cnt} orphans`);
+	check(
+		'No orphaned meal_plan_sessions (dietitian FK)',
+		orphanedDietitian.cnt === 0,
+		`${orphanedDietitian.cnt} orphans`
+	);
 
 	// Partial unique: only one active session per (client, dietitian)
 	const dupActiveSession = db
@@ -371,7 +476,11 @@ if (tableExists('meal_plan_sessions')) {
        )`
 		)
 		.get()!;
-	check('At most one active session per (client, dietitian)', dupActiveSession.cnt === 0, `${dupActiveSession.cnt} violations`);
+	check(
+		'At most one active session per (client, dietitian)',
+		dupActiveSession.cnt === 0,
+		`${dupActiveSession.cnt} violations`
+	);
 
 	// Partial unique: only one draft session per (client, dietitian)
 	const dupDraftSession = db
@@ -383,7 +492,11 @@ if (tableExists('meal_plan_sessions')) {
        )`
 		)
 		.get()!;
-	check('At most one draft session per (client, dietitian)', dupDraftSession.cnt === 0, `${dupDraftSession.cnt} violations`);
+	check(
+		'At most one draft session per (client, dietitian)',
+		dupDraftSession.cnt === 0,
+		`${dupDraftSession.cnt} violations`
+	);
 
 	const nullDates = db
 		.prepare<[], { cnt: number }>(
@@ -391,7 +504,11 @@ if (tableExists('meal_plan_sessions')) {
        WHERE start_date IS NULL OR end_date IS NULL`
 		)
 		.get()!;
-	check('All meal_plan_sessions have start_date and end_date', nullDates.cnt === 0, `${nullDates.cnt} missing dates`);
+	check(
+		'All meal_plan_sessions have start_date and end_date',
+		nullDates.cnt === 0,
+		`${nullDates.cnt} missing dates`
+	);
 } else {
 	skip('meal_plan_sessions');
 }
@@ -407,7 +524,11 @@ if (tableExists('meal_plans') && tableExists('meal_plan_sessions')) {
        WHERE session_id NOT IN (SELECT id FROM meal_plan_sessions)`
 		)
 		.get()!;
-	check('No orphaned meal_plans (session FK)', orphanedMealPlans.cnt === 0, `${orphanedMealPlans.cnt} orphans`);
+	check(
+		'No orphaned meal_plans (session FK)',
+		orphanedMealPlans.cnt === 0,
+		`${orphanedMealPlans.cnt} orphans`
+	);
 
 	const invalidPlanType = db
 		.prepare<[], { cnt: number }>(
@@ -415,7 +536,11 @@ if (tableExists('meal_plans') && tableExists('meal_plan_sessions')) {
        WHERE plan_type NOT IN ('daily', 'weekly')`
 		)
 		.get()!;
-	check('meal_plans.plan_type values valid', invalidPlanType.cnt === 0, `${invalidPlanType.cnt} invalid`);
+	check(
+		'meal_plans.plan_type values valid',
+		invalidPlanType.cnt === 0,
+		`${invalidPlanType.cnt} invalid`
+	);
 } else {
 	skip('meal_plans');
 }
@@ -427,7 +552,11 @@ if (tableExists('meal_days') && tableExists('meal_plans')) {
        WHERE meal_plan_id NOT IN (SELECT id FROM meal_plans)`
 		)
 		.get()!;
-	check('No orphaned meal_days (meal_plan FK)', orphanedDays.cnt === 0, `${orphanedDays.cnt} orphans`);
+	check(
+		'No orphaned meal_days (meal_plan FK)',
+		orphanedDays.cnt === 0,
+		`${orphanedDays.cnt} orphans`
+	);
 } else {
 	skip('meal_days');
 }
@@ -450,7 +579,11 @@ if (tableExists('meals') && tableExists('meal_days')) {
        )`
 		)
 		.get()!;
-	check('meals.meal_type values valid', invalidMealType.cnt === 0, `${invalidMealType.cnt} invalid`);
+	check(
+		'meals.meal_type values valid',
+		invalidMealType.cnt === 0,
+		`${invalidMealType.cnt} invalid`
+	);
 
 	if (tableExists('recipes')) {
 		const invalidRecipeFk = db
@@ -460,7 +593,11 @@ if (tableExists('meals') && tableExists('meal_days')) {
            AND recipe_id NOT IN (SELECT id FROM recipes)`
 			)
 			.get()!;
-		check('No meals with invalid recipe_id FK', invalidRecipeFk.cnt === 0, `${invalidRecipeFk.cnt} invalid`);
+		check(
+			'No meals with invalid recipe_id FK',
+			invalidRecipeFk.cnt === 0,
+			`${invalidRecipeFk.cnt} invalid`
+		);
 	}
 
 	if (tableExists('food_items')) {
@@ -471,7 +608,11 @@ if (tableExists('meals') && tableExists('meal_days')) {
            AND food_item_id NOT IN (SELECT id FROM food_items)`
 			)
 			.get()!;
-		check('No meals with invalid food_item_id FK', invalidFoodFk.cnt === 0, `${invalidFoodFk.cnt} invalid`);
+		check(
+			'No meals with invalid food_item_id FK',
+			invalidFoodFk.cnt === 0,
+			`${invalidFoodFk.cnt} invalid`
+		);
 	}
 } else {
 	skip('meals');
@@ -489,7 +630,11 @@ if (tableExists('meal_tracking')) {
          WHERE session_id NOT IN (SELECT id FROM meal_plan_sessions)`
 			)
 			.get()!;
-		check('No orphaned meal_tracking (session FK)', orphanedTrackSession.cnt === 0, `${orphanedTrackSession.cnt} orphans`);
+		check(
+			'No orphaned meal_tracking (session FK)',
+			orphanedTrackSession.cnt === 0,
+			`${orphanedTrackSession.cnt} orphans`
+		);
 	}
 
 	if (tableExists('meals')) {
@@ -499,7 +644,11 @@ if (tableExists('meal_tracking')) {
          WHERE meal_id NOT IN (SELECT id FROM meals)`
 			)
 			.get()!;
-		check('No orphaned meal_tracking (meal FK)', orphanedTrackMeal.cnt === 0, `${orphanedTrackMeal.cnt} orphans`);
+		check(
+			'No orphaned meal_tracking (meal FK)',
+			orphanedTrackMeal.cnt === 0,
+			`${orphanedTrackMeal.cnt} orphans`
+		);
 	}
 
 	const invalidTrackStatus = db
@@ -508,14 +657,23 @@ if (tableExists('meal_tracking')) {
        WHERE status NOT IN ('eaten', 'not_eaten', 'skipped')`
 		)
 		.get()!;
-	check('meal_tracking.status values valid', invalidTrackStatus.cnt === 0, `${invalidTrackStatus.cnt} invalid`);
+	check(
+		'meal_tracking.status values valid',
+		invalidTrackStatus.cnt === 0,
+		`${invalidTrackStatus.cnt} invalid`
+	);
 
 	const nullTrackDate = db
-		.prepare<[], { cnt: number }>(
-			`SELECT COUNT(*) as cnt FROM meal_tracking WHERE date IS NULL OR date = ''`
-		)
+		.prepare<
+			[],
+			{ cnt: number }
+		>(`SELECT COUNT(*) as cnt FROM meal_tracking WHERE date IS NULL OR date = ''`)
 		.get()!;
-	check('All meal_tracking rows have a date', nullTrackDate.cnt === 0, `${nullTrackDate.cnt} missing dates`);
+	check(
+		'All meal_tracking rows have a date',
+		nullTrackDate.cnt === 0,
+		`${nullTrackDate.cnt} missing dates`
+	);
 } else {
 	skip('meal_tracking');
 }
@@ -532,7 +690,11 @@ if (tableExists('daily_logs')) {
          WHERE session_id NOT IN (SELECT id FROM meal_plan_sessions)`
 			)
 			.get()!;
-		check('No orphaned daily_logs (session FK)', orphanedLogSession.cnt === 0, `${orphanedLogSession.cnt} orphans`);
+		check(
+			'No orphaned daily_logs (session FK)',
+			orphanedLogSession.cnt === 0,
+			`${orphanedLogSession.cnt} orphans`
+		);
 	}
 
 	const orphanedLogClient = db
@@ -541,19 +703,26 @@ if (tableExists('daily_logs')) {
        WHERE client_id NOT IN (SELECT id FROM users)`
 		)
 		.get()!;
-	check('No orphaned daily_logs (client FK)', orphanedLogClient.cnt === 0, `${orphanedLogClient.cnt} orphans`);
+	check(
+		'No orphaned daily_logs (client FK)',
+		orphanedLogClient.cnt === 0,
+		`${orphanedLogClient.cnt} orphans`
+	);
 
 	const negativeWater = db
-		.prepare<[], { cnt: number }>(
-			`SELECT COUNT(*) as cnt FROM daily_logs WHERE water_cups < 0`
-		)
+		.prepare<[], { cnt: number }>(`SELECT COUNT(*) as cnt FROM daily_logs WHERE water_cups < 0`)
 		.get()!;
-	check('No daily_logs with negative water_cups', negativeWater.cnt === 0, `${negativeWater.cnt} invalid`);
+	check(
+		'No daily_logs with negative water_cups',
+		negativeWater.cnt === 0,
+		`${negativeWater.cnt} invalid`
+	);
 
 	const nullDate = db
-		.prepare<[], { cnt: number }>(
-			`SELECT COUNT(*) as cnt FROM daily_logs WHERE date IS NULL OR date = ''`
-		)
+		.prepare<
+			[],
+			{ cnt: number }
+		>(`SELECT COUNT(*) as cnt FROM daily_logs WHERE date IS NULL OR date = ''`)
 		.get()!;
 	check('All daily_logs have a date', nullDate.cnt === 0, `${nullDate.cnt} missing`);
 } else {
@@ -571,7 +740,11 @@ if (tableExists('patient_diagnoses')) {
        WHERE client_id NOT IN (SELECT id FROM users)`
 		)
 		.get()!;
-	check('No orphaned patient_diagnoses (client FK)', orphanedDiagClient.cnt === 0, `${orphanedDiagClient.cnt} orphans`);
+	check(
+		'No orphaned patient_diagnoses (client FK)',
+		orphanedDiagClient.cnt === 0,
+		`${orphanedDiagClient.cnt} orphans`
+	);
 
 	const orphanedDiagDietitian = db
 		.prepare<[], { cnt: number }>(
@@ -579,7 +752,11 @@ if (tableExists('patient_diagnoses')) {
        WHERE dietitian_id NOT IN (SELECT id FROM users)`
 		)
 		.get()!;
-	check('No orphaned patient_diagnoses (dietitian FK)', orphanedDiagDietitian.cnt === 0, `${orphanedDiagDietitian.cnt} orphans`);
+	check(
+		'No orphaned patient_diagnoses (dietitian FK)',
+		orphanedDiagDietitian.cnt === 0,
+		`${orphanedDiagDietitian.cnt} orphans`
+	);
 
 	const invalidSeverity = db
 		.prepare<[], { cnt: number }>(
@@ -587,7 +764,11 @@ if (tableExists('patient_diagnoses')) {
        WHERE severity NOT IN ('mild', 'moderate', 'severe')`
 		)
 		.get()!;
-	check('patient_diagnoses.severity values valid', invalidSeverity.cnt === 0, `${invalidSeverity.cnt} invalid`);
+	check(
+		'patient_diagnoses.severity values valid',
+		invalidSeverity.cnt === 0,
+		`${invalidSeverity.cnt} invalid`
+	);
 
 	const invalidDiagStatus = db
 		.prepare<[], { cnt: number }>(
@@ -595,7 +776,11 @@ if (tableExists('patient_diagnoses')) {
        WHERE status NOT IN ('active', 'resolved', 'managed')`
 		)
 		.get()!;
-	check('patient_diagnoses.status values valid', invalidDiagStatus.cnt === 0, `${invalidDiagStatus.cnt} invalid`);
+	check(
+		'patient_diagnoses.status values valid',
+		invalidDiagStatus.cnt === 0,
+		`${invalidDiagStatus.cnt} invalid`
+	);
 
 	const nullDiagKey = db
 		.prepare<[], { cnt: number }>(
@@ -603,7 +788,11 @@ if (tableExists('patient_diagnoses')) {
        WHERE diag_key IS NULL OR diag_key = ''`
 		)
 		.get()!;
-	check('All patient_diagnoses have diag_key set', nullDiagKey.cnt === 0, `${nullDiagKey.cnt} missing`);
+	check(
+		'All patient_diagnoses have diag_key set',
+		nullDiagKey.cnt === 0,
+		`${nullDiagKey.cnt} missing`
+	);
 } else {
 	skip('patient_diagnoses');
 }
@@ -619,7 +808,11 @@ if (tableExists('chat_conversations')) {
        WHERE dietitian_id NOT IN (SELECT id FROM users)`
 		)
 		.get()!;
-	check('No orphaned chat_conversations (dietitian FK)', orphanedConvDietitian.cnt === 0, `${orphanedConvDietitian.cnt} orphans`);
+	check(
+		'No orphaned chat_conversations (dietitian FK)',
+		orphanedConvDietitian.cnt === 0,
+		`${orphanedConvDietitian.cnt} orphans`
+	);
 
 	const orphanedConvClient = db
 		.prepare<[], { cnt: number }>(
@@ -627,7 +820,11 @@ if (tableExists('chat_conversations')) {
        WHERE client_id NOT IN (SELECT id FROM users)`
 		)
 		.get()!;
-	check('No orphaned chat_conversations (client FK)', orphanedConvClient.cnt === 0, `${orphanedConvClient.cnt} orphans`);
+	check(
+		'No orphaned chat_conversations (client FK)',
+		orphanedConvClient.cnt === 0,
+		`${orphanedConvClient.cnt} orphans`
+	);
 
 	// Each (dietitian, client) pair must have at most one conversation
 	const dupConvs = db
@@ -638,7 +835,11 @@ if (tableExists('chat_conversations')) {
        )`
 		)
 		.get()!;
-	check('Unique (dietitian, client) pairs in chat_conversations', dupConvs.cnt === 0, `${dupConvs.cnt} duplicates`);
+	check(
+		'Unique (dietitian, client) pairs in chat_conversations',
+		dupConvs.cnt === 0,
+		`${dupConvs.cnt} duplicates`
+	);
 
 	if (tableExists('chat_messages')) {
 		const orphanedMessages = db
@@ -647,7 +848,11 @@ if (tableExists('chat_conversations')) {
          WHERE conversation_id NOT IN (SELECT id FROM chat_conversations)`
 			)
 			.get()!;
-		check('No orphaned chat_messages (conversation FK)', orphanedMessages.cnt === 0, `${orphanedMessages.cnt} orphans`);
+		check(
+			'No orphaned chat_messages (conversation FK)',
+			orphanedMessages.cnt === 0,
+			`${orphanedMessages.cnt} orphans`
+		);
 
 		const msgOrphanSender = db
 			.prepare<[], { cnt: number }>(
@@ -655,7 +860,11 @@ if (tableExists('chat_conversations')) {
          WHERE sender_user_id NOT IN (SELECT id FROM users)`
 			)
 			.get()!;
-		check('No chat_messages with invalid sender FK', msgOrphanSender.cnt === 0, `${msgOrphanSender.cnt} orphans`);
+		check(
+			'No chat_messages with invalid sender FK',
+			msgOrphanSender.cnt === 0,
+			`${msgOrphanSender.cnt} orphans`
+		);
 
 		const emptyMessages = db
 			.prepare<[], { cnt: number }>(
@@ -663,7 +872,11 @@ if (tableExists('chat_conversations')) {
          WHERE body IS NULL OR TRIM(body) = ''`
 			)
 			.get()!;
-		check('No chat_messages with empty body', emptyMessages.cnt === 0, `${emptyMessages.cnt} empty`);
+		check(
+			'No chat_messages with empty body',
+			emptyMessages.cnt === 0,
+			`${emptyMessages.cnt} empty`
+		);
 	}
 } else {
 	skip('chat_conversations');
@@ -681,7 +894,11 @@ const plainPasswords = db
      WHERE password IS NOT NULL AND password NOT LIKE '$2%'`
 	)
 	.get()!;
-check('All user passwords are bcrypt-hashed', plainPasswords.cnt === 0, `${plainPasswords.cnt} unhashed`);
+check(
+	'All user passwords are bcrypt-hashed',
+	plainPasswords.cnt === 0,
+	`${plainPasswords.cnt} unhashed`
+);
 
 // No session tokens stored as plaintext (they should be opaque)
 if (tableExists('auth_sessions')) {
@@ -693,17 +910,24 @@ if (tableExists('auth_sessions')) {
 		.get()!;
 	// Not a hard failure — expired sessions may exist until GC runs
 	const icon = expiredSessions.cnt === 0 ? '✓' : '⚠';
-	console.log(`  ${icon} INFO: ${expiredSessions.cnt} expired sessions in auth_sessions (expected if GC hasn't run)`);
+	console.log(
+		`  ${icon} INFO: ${expiredSessions.cnt} expired sessions in auth_sessions (expected if GC hasn't run)`
+	);
 }
 
 // OTP records must have expiry
 if (tableExists('registration_email_otp')) {
 	const otpWithoutExpiry = db
-		.prepare<[], { cnt: number }>(
-			`SELECT COUNT(*) as cnt FROM registration_email_otp WHERE expires_at IS NULL`
-		)
+		.prepare<
+			[],
+			{ cnt: number }
+		>(`SELECT COUNT(*) as cnt FROM registration_email_otp WHERE expires_at IS NULL`)
 		.get()!;
-	check('All OTP records have expiry', otpWithoutExpiry.cnt === 0, `${otpWithoutExpiry.cnt} missing expiry`);
+	check(
+		'All OTP records have expiry',
+		otpWithoutExpiry.cnt === 0,
+		`${otpWithoutExpiry.cnt} missing expiry`
+	);
 
 	const otpOrphanUser = db
 		.prepare<[], { cnt: number }>(
@@ -711,7 +935,11 @@ if (tableExists('registration_email_otp')) {
        WHERE user_id NOT IN (SELECT id FROM users)`
 		)
 		.get()!;
-	check('All OTP records reference a valid user', otpOrphanUser.cnt === 0, `${otpOrphanUser.cnt} orphaned`);
+	check(
+		'All OTP records reference a valid user',
+		otpOrphanUser.cnt === 0,
+		`${otpOrphanUser.cnt} orphaned`
+	);
 }
 
 // ─── Summary ──────────────────────────────────────────────────────────────────

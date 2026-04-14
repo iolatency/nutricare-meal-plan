@@ -158,7 +158,14 @@
 			{#if !effectiveSelected}
 				<div class="msg-placeholder">
 					<div class="msg-placeholder-icon" aria-hidden="true">
-						<svg width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+						<svg
+							width="36"
+							height="36"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="1.5"
+							viewBox="0 0 24 24"
+						>
 							<path
 								stroke-linecap="round"
 								stroke-linejoin="round"
@@ -169,30 +176,28 @@
 					<p class="msg-placeholder-title">اختر عميلًا من القائمة</p>
 					<p class="msg-placeholder-desc">ستظهر المحادثة هنا لإرسال الرسائل ومتابعة التقدم.</p>
 				</div>
-			{:else}
-				{#if msgLoading}
-					<div class="msg-loading">جارٍ التحميل…</div>
-				{:else if msgError}
-					<div class="msg-err">
-						<p>{msgError}</p>
-						<button
-							type="button"
-							class="msg-retry"
-							onclick={() => effectiveSelected && refreshMessages(effectiveSelected.id)}
-						>
-							إعادة المحاولة
-						</button>
-					</div>
-				{:else if effectiveSelected.id > 0 && data.user}
-					<ChatShell
-						conversationId={effectiveSelected.id}
-						currentUserId={data.user.id}
-						title={selectedPeerName}
-						initialMessages={messages}
-						onMarkRead={() => invalidateAll()}
-						onBack={closeMobileChat}
-					/>
-				{/if}
+			{:else if msgLoading}
+				<div class="msg-loading">جارٍ التحميل…</div>
+			{:else if msgError}
+				<div class="msg-err">
+					<p>{msgError}</p>
+					<button
+						type="button"
+						class="msg-retry"
+						onclick={() => effectiveSelected && refreshMessages(effectiveSelected.id)}
+					>
+						إعادة المحاولة
+					</button>
+				</div>
+			{:else if effectiveSelected.id > 0 && data.user}
+				<ChatShell
+					conversationId={effectiveSelected.id}
+					currentUserId={data.user.id}
+					title={selectedPeerName}
+					initialMessages={messages}
+					onMarkRead={() => invalidateAll()}
+					onBack={closeMobileChat}
+				/>
 			{/if}
 		</div>
 	</div>
@@ -348,7 +353,12 @@
 	}
 	.msg-retry {
 		border: 1px solid var(--fp-accent-deep);
-		background: linear-gradient(165deg, #34b16f 0%, var(--fp-accent) 45%, var(--fp-accent-deep) 100%);
+		background: linear-gradient(
+			165deg,
+			#34b16f 0%,
+			var(--fp-accent) 45%,
+			var(--fp-accent-deep) 100%
+		);
 		color: #fff;
 		padding: 10px 20px;
 		border-radius: 12px;
@@ -364,7 +374,8 @@
 
 	@media (max-width: 899px) {
 		.page {
-			padding: 16px max(12px, env(safe-area-inset-right, 0px)) 28px max(12px, env(safe-area-inset-left, 0px));
+			padding: 16px max(12px, env(safe-area-inset-right, 0px)) 28px
+				max(12px, env(safe-area-inset-left, 0px));
 		}
 		.page-header {
 			margin-bottom: 16px;
@@ -385,7 +396,8 @@
 			margin-inline-end: calc(-1 * var(--main-pad-end));
 			width: calc(100% + var(--main-pad-start) + var(--main-pad-end));
 			max-width: none;
-			padding: 4px max(8px, env(safe-area-inset-right, 0px)) 2px max(8px, env(safe-area-inset-left, 0px));
+			padding: 4px max(8px, env(safe-area-inset-right, 0px)) 2px
+				max(8px, env(safe-area-inset-left, 0px));
 			display: flex;
 			flex-direction: column;
 			min-height: calc(

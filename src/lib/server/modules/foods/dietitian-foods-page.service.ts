@@ -1,14 +1,16 @@
 import { db } from '$lib/server/db';
-import { foodItems, foodCategories, userFoodImports, externalFoodCatalog } from '$lib/server/db/schema';
+import {
+	foodItems,
+	foodCategories,
+	userFoodImports,
+	externalFoodCatalog
+} from '$lib/server/db/schema';
 import { eq, ne, like, or, and, desc, sql, exists } from 'drizzle-orm';
 import { fail, type ActionFailure } from '@sveltejs/kit';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 
-export async function loadDietitianFoodsPage(params: {
-	userId: number;
-	url: URL;
-}) {
+export async function loadDietitianFoodsPage(params: { userId: number; url: URL }) {
 	const { userId, url } = params;
 	const q = url.searchParams.get('q') ?? '';
 	const pageRaw = Number(url.searchParams.get('page') ?? '1');
@@ -22,13 +24,13 @@ export async function loadDietitianFoodsPage(params: {
 		db
 			.select({ x: sql`1` })
 			.from(userFoodImports)
-			.where(
-				and(eq(userFoodImports.foodItemId, foodItems.id), eq(userFoodImports.userId, userId))!
-			)
+			.where(and(eq(userFoodImports.foodItemId, foodItems.id), eq(userFoodImports.userId, userId))!)
 	);
 	const myFoodsScope = or(myOwnNonEdamam, myLinkedEdamamImport);
 
-	const searchClause = q ? or(like(foodItems.name, `%${q}%`), like(foodItems.nameAr, `%${q}%`)) : undefined;
+	const searchClause = q
+		? or(like(foodItems.name, `%${q}%`), like(foodItems.nameAr, `%${q}%`))
+		: undefined;
 
 	const whereClause = searchClause ? and(myFoodsScope, searchClause) : myFoodsScope;
 
@@ -182,7 +184,8 @@ export async function actionCreateFood(params: {
 		}
 	}
 
-	const fiberFromMicro = typeof fullNutrients['FIBTG'] === 'number' ? (fullNutrients['FIBTG'] as number) : null;
+	const fiberFromMicro =
+		typeof fullNutrients['FIBTG'] === 'number' ? (fullNutrients['FIBTG'] as number) : null;
 	const fiber = fiberFromMicro ?? (parseFloat(data.get('fiber')?.toString() ?? '0') || 0);
 
 	db.insert(foodItems)
@@ -208,7 +211,9 @@ export async function actionCreateFood(params: {
 
 export async function actionCreateFoodCategory(
 	data: FormData
-): Promise<ActionFailure<{ error: string }> | { success: true; category: typeof foodCategories.$inferSelect }> {
+): Promise<
+	ActionFailure<{ error: string }> | { success: true; category: typeof foodCategories.$inferSelect }
+> {
 	const nameAr = data.get('nameAr')?.toString().trim() ?? '';
 	if (!nameAr) return fail(400, { error: 'يرجى إدخال اسم التصنيف' });
 
@@ -321,7 +326,8 @@ export async function actionUpdateFood(params: {
 		}
 	}
 
-	const fiberFromMicro = typeof fullNutrients.FIBTG === 'number' ? (fullNutrients.FIBTG as number) : null;
+	const fiberFromMicro =
+		typeof fullNutrients.FIBTG === 'number' ? (fullNutrients.FIBTG as number) : null;
 	const fiber = fiberFromMicro ?? (parseFloat(data.get('fiber')?.toString() ?? '0') || 0);
 
 	db.update(foodItems)

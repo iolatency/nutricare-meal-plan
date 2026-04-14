@@ -36,9 +36,7 @@ export async function fetchExternalFoodDetail(foodId: string): Promise<{
 	fat: number;
 	fiber: number;
 } | null> {
-	const response = await fetch(
-		`/api/foods/external-detail?foodId=${encodeURIComponent(foodId)}`
-	);
+	const response = await fetch(`/api/foods/external-detail?foodId=${encodeURIComponent(foodId)}`);
 	if (!response.ok) return null;
 	return (await response.json()) as {
 		fullNutrients: string | null;

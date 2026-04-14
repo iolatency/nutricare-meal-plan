@@ -39,7 +39,10 @@ export async function getSessionExpiry(token: string): Promise<{ expiresAt: stri
 }
 
 export async function refreshAuthSession(token: string, newExpiresAt: string) {
-	await db.update(authSessions).set({ expiresAt: newExpiresAt }).where(eq(authSessions.token, token));
+	await db
+		.update(authSessions)
+		.set({ expiresAt: newExpiresAt })
+		.where(eq(authSessions.token, token));
 }
 
 export async function deleteExpiredSessions(): Promise<void> {

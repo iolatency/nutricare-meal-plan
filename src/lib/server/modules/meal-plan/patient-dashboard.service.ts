@@ -12,6 +12,17 @@ import {
 } from '$lib/server/db/schema';
 import { and, desc, eq, inArray } from 'drizzle-orm';
 
+/** Parsed `plan.builderConfig` JSON; used on patient dashboard + AI defaults. */
+export type PatientBuilderConfig = {
+	targetCalories?: number;
+	macros?: { c: number; p: number; f: number };
+	excluded?: string[];
+	diags?: string[];
+	tags?: string[];
+	dietTypes?: string[];
+	selectedMeals?: string[];
+};
+
 export function loadPatientDashboard(sessionId: number, session: { clientId: number }) {
 	const patient = db
 		.select({ id: users.id, name: users.name })
@@ -187,9 +198,11 @@ export function loadPatientDashboard(sessionId: number, session: { clientId: num
 		weekDates.push(date.toISOString().split('T')[0]);
 	}
 
-	let builderConfig = null;
+	let builderConfig: PatientBuilderConfig | null;
 	try {
-		builderConfig = plan.builderConfig ? JSON.parse(plan.builderConfig) : null;
+		builderConfig = plan.builderConfig
+			? (JSON.parse(plan.builderConfig) as PatientBuilderConfig)
+			: null;
 	} catch {
 		builderConfig = null;
 	}
@@ -206,12 +219,21 @@ export function loadPatientDashboard(sessionId: number, session: { clientId: num
 	};
 }
 
-export function setMealStatus(sessionId: number, mealId: number, status: 'eaten' | 'skipped' | 'not_eaten', date: string) {
+export function setMealStatus(
+	sessionId: number,
+	mealId: number,
+	status: 'eaten' | 'skipped' | 'not_eaten',
+	date: string
+) {
 	const existing = db
 		.select()
 		.from(mealTracking)
 		.where(
-			and(eq(mealTracking.sessionId, sessionId), eq(mealTracking.mealId, mealId), eq(mealTracking.date, date))
+			and(
+				eq(mealTracking.sessionId, sessionId),
+				eq(mealTracking.mealId, mealId),
+				eq(mealTracking.date, date)
+			)
 		)
 		.get();
 

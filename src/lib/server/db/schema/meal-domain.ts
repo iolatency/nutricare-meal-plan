@@ -75,7 +75,9 @@ export const userFoodImports = sqliteTable(
 			.notNull()
 			.references(() => externalFoodCatalog.id, { onDelete: 'cascade' }),
 		foodItemId: integer('food_item_id').references(() => foodItems.id, { onDelete: 'set null' }),
-		importedAt: text('imported_at').notNull().default(sql`(datetime('now'))`)
+		importedAt: text('imported_at')
+			.notNull()
+			.default(sql`(datetime('now'))`)
 	},
 	(t) => [
 		uniqueIndex('user_food_imports_user_catalog_idx').on(t.userId, t.externalFoodId),
@@ -105,7 +107,9 @@ export const recipes = sqliteTable('recipes', {
 	isFavorite: integer('is_favorite', { mode: 'boolean' }).notNull().default(false),
 	source: text('source').notNull().default('internal'),
 	imageUrl: text('image_url'),
-	createdAt: text('created_at').notNull().default(sql`(datetime('now'))`)
+	createdAt: text('created_at')
+		.notNull()
+		.default(sql`(datetime('now'))`)
 });
 
 export const recipeIngredients = sqliteTable(
@@ -180,7 +184,9 @@ export const mealPlans = sqliteTable('meal_plans', {
 	sessionId: integer('session_id')
 		.notNull()
 		.references(() => mealPlanSessions.id, { onDelete: 'cascade' }),
-	planType: text('plan_type', { enum: ['daily', 'weekly'] }).notNull().default('weekly'),
+	planType: text('plan_type', { enum: ['daily', 'weekly'] })
+		.notNull()
+		.default('weekly'),
 	version: integer('version').notNull().default(1),
 	recommendation: text('recommendation'),
 	note: text('note'),
@@ -256,7 +262,9 @@ export const dailyLogs = sqliteTable(
 		weight: real('weight'),
 		adherenceScore: real('adherence_score'),
 		completed: integer('completed', { mode: 'boolean' }).notNull().default(false),
-		createdAt: text('created_at').notNull().default(sql`(datetime('now'))`)
+		createdAt: text('created_at')
+			.notNull()
+			.default(sql`(datetime('now'))`)
 	},
 	(t) => [
 		index('dl_session_date_idx').on(t.sessionId, t.date),
@@ -281,10 +289,9 @@ export const patientDiagnoses = sqliteTable(
 		diagnosedDate: text('diagnosed_date').notNull(),
 		status: text('status', { enum: ['active', 'resolved', 'managed'] }).notNull(),
 		notes: text('notes').notNull(),
-		createdAt: text('created_at').notNull().default(sql`(datetime('now'))`)
+		createdAt: text('created_at')
+			.notNull()
+			.default(sql`(datetime('now'))`)
 	},
-	(t) => [
-		index('pd_client_idx').on(t.clientId),
-		index('pd_dietitian_idx').on(t.dietitianId)
-	]
+	(t) => [index('pd_client_idx').on(t.clientId), index('pd_dietitian_idx').on(t.dietitianId)]
 );

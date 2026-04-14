@@ -22,7 +22,9 @@ function unlinkRecipeUploadIfOurs(imageUrl: string | null | undefined) {
 	unlink(full).catch(() => {});
 }
 
-async function saveRecipeImageUpload(imageFile: File | null): Promise<{ url: string | null; error?: string }> {
+async function saveRecipeImageUpload(
+	imageFile: File | null
+): Promise<{ url: string | null; error?: string }> {
 	if (!imageFile || imageFile.size === 0 || !imageFile.name) return { url: null };
 	if (!RECIPE_IMAGE_MIME.has(imageFile.type)) {
 		return { url: null, error: 'نوع صورة غير مسموح (JPEG، PNG، WEBP، GIF)' };
@@ -164,7 +166,7 @@ export async function actionCreateRecipe(params: {
 
 	if (!nameAr) return fail(400, { error: 'يرجى إدخال الاسم بالعربي' });
 
-	let ings: IngInput[] = [];
+	let ings: IngInput[];
 	try {
 		ings = JSON.parse(ingredientsJson);
 	} catch {
@@ -189,12 +191,14 @@ export async function actionCreateRecipe(params: {
 		.get();
 
 	for (const ing of ings) {
-		db.insert(recipeIngredients).values({
-			recipeId: recipe.id,
-			foodItemId: ing.foodId,
-			quantity: ing.quantity,
-			unit: ing.unit
-		}).run();
+		db.insert(recipeIngredients)
+			.values({
+				recipeId: recipe.id,
+				foodItemId: ing.foodId,
+				quantity: ing.quantity,
+				unit: ing.unit
+			})
+			.run();
 	}
 
 	return { success: true };
@@ -271,24 +275,28 @@ export async function actionEditRecipe(params: {
 			if (customText && (!Number.isFinite(foodId) || foodId <= 0)) {
 				const qty = parseFloat(String(o.quantity));
 				const unit = (typeof o.unit === 'string' ? o.unit : 'g').trim() || 'g';
-				db.insert(recipeIngredients).values({
-					recipeId: id,
-					foodItemId: null,
-					customText,
-					quantity: Number.isFinite(qty) ? qty : 0,
-					unit
-				}).run();
+				db.insert(recipeIngredients)
+					.values({
+						recipeId: id,
+						foodItemId: null,
+						customText,
+						quantity: Number.isFinite(qty) ? qty : 0,
+						unit
+					})
+					.run();
 				continue;
 			}
 			const ing = coerceFoodIngFromJson(o);
 			if (!ing) continue;
 			foodIngsForNutrients.push(ing);
-			db.insert(recipeIngredients).values({
-				recipeId: id,
-				foodItemId: ing.foodId,
-				quantity: ing.quantity,
-				unit: ing.unit
-			}).run();
+			db.insert(recipeIngredients)
+				.values({
+					recipeId: id,
+					foodItemId: ing.foodId,
+					quantity: ing.quantity,
+					unit: ing.unit
+				})
+				.run();
 		}
 		nutrients = nutrientsJsonFromFoodIngs(foodIngsForNutrients);
 	}
@@ -322,7 +330,10 @@ export async function actionEditRecipe(params: {
 			const ingId = parseInt(data.get(`ingId_${i}`)?.toString() ?? '0');
 			const qty = parseFloat(data.get(`ingQty_${i}`)?.toString() ?? '0');
 			if (ingId && qty >= 0) {
-				db.update(recipeIngredients).set({ quantity: qty }).where(eq(recipeIngredients.id, ingId)).run();
+				db.update(recipeIngredients)
+					.set({ quantity: qty })
+					.where(eq(recipeIngredients.id, ingId))
+					.run();
 			}
 			i++;
 		}

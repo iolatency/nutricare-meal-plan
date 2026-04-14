@@ -33,7 +33,9 @@ function authHeaders(serviceRoleKey: string): HeadersInit {
 	};
 }
 
-export function parseSqliteStorageSyncFromEnv(env: Record<string, string | undefined>): SqliteStorageSyncConfig | null {
+export function parseSqliteStorageSyncFromEnv(
+	env: Record<string, string | undefined>
+): SqliteStorageSyncConfig | null {
 	const on =
 		env.SQLITE_STORAGE_SYNC === '1' ||
 		env.SQLITE_STORAGE_SYNC === 'true' ||

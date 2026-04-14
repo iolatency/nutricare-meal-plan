@@ -1,5 +1,12 @@
 import { db } from '$lib/server/db';
-import { users, mealPlanSessions, mealPlans, mealDays, meals, mealTracking } from '$lib/server/db/schema';
+import {
+	users,
+	mealPlanSessions,
+	mealPlans,
+	mealDays,
+	meals,
+	mealTracking
+} from '$lib/server/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { error } from '@sveltejs/kit';
 
@@ -63,7 +70,9 @@ export async function loadMealPlanTrackingPage(params: {
 
 		const base = new Date(dateFrom + 'T00:00:00');
 		const offset =
-			planType === 'weekly' ? (day.dayOfWeek ?? day.sortOrder ?? 0) : (day.sortOrder ?? day.dayOfWeek ?? 0);
+			planType === 'weekly'
+				? (day.dayOfWeek ?? day.sortOrder ?? 0)
+				: (day.sortOrder ?? day.dayOfWeek ?? 0);
 		base.setDate(base.getDate() + offset);
 		return toLocalYmd(base);
 	};
@@ -115,7 +124,10 @@ export async function loadMealPlanTrackingPage(params: {
 	let notEaten = 0;
 	let withReplacement = 0;
 
-	const mealTypeStats: Record<string, { total: number; eaten: number; skipped: number; notEaten: number }> = {};
+	const mealTypeStats: Record<
+		string,
+		{ total: number; eaten: number; skipped: number; notEaten: number }
+	> = {};
 	const dayStats: Array<{
 		date: string | null;
 		label: string;
@@ -156,7 +168,11 @@ export async function loadMealPlanTrackingPage(params: {
 				mealTypeStats[meal.mealType].skipped++;
 				if (latest.replacementNote) {
 					withReplacement++;
-					replacementNotes.push({ date: latest.date, mealType: meal.mealType, note: latest.replacementNote });
+					replacementNotes.push({
+						date: latest.date,
+						mealType: meal.mealType,
+						note: latest.replacementNote
+					});
 				}
 			} else {
 				notEaten++;

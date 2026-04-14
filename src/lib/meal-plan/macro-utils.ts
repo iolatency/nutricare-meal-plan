@@ -1,11 +1,7 @@
 import type { Macros, PlanGrid, PlanTotals, MealTotals, RecipeNutrients } from './types';
 import { MICROS } from './constants';
 
-export function adjustMacro(
-	changed: 'c' | 'p' | 'f',
-	newValue: number,
-	current: Macros
-): Macros {
+export function adjustMacro(changed: 'c' | 'p' | 'f', newValue: number, current: Macros): Macros {
 	let c = current.c;
 	let p = current.p;
 	let f = current.f;

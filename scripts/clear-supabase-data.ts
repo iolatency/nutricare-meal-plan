@@ -13,7 +13,9 @@ const DATABASE_URL = process.env.DATABASE_URL;
 const confirmed = process.env.CONFIRM_CLEAR_SUPABASE === 'yes';
 
 if (!DATABASE_URL) {
-	console.error('DATABASE_URL is not set. Use: CONFIRM_CLEAR_SUPABASE=yes npm run db:clear-supabase');
+	console.error(
+		'DATABASE_URL is not set. Use: CONFIRM_CLEAR_SUPABASE=yes npm run db:clear-supabase'
+	);
 	process.exit(1);
 }
 
@@ -70,9 +72,7 @@ async function main() {
 		// No single transaction: a missing table would abort the whole batch in Postgres.
 		for (const table of TABLES) {
 			try {
-				await client.query(
-					`TRUNCATE TABLE ${pg.escapeIdentifier(table)} RESTART IDENTITY CASCADE`
-				);
+				await client.query(`TRUNCATE TABLE ${pg.escapeIdentifier(table)} RESTART IDENTITY CASCADE`);
 				console.log(`  ✓ ${table}`);
 			} catch (e: unknown) {
 				const msg = e instanceof Error ? e.message : String(e);

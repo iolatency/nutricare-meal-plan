@@ -1,6 +1,9 @@
 import type { RequestHandler } from './$types';
 import { json, error } from '@sveltejs/kit';
-import { importFoodFromEdamam, type ImportFoodBody } from '$lib/server/modules/foods/foods-api.service';
+import {
+	importFoodFromEdamam,
+	type ImportFoodBody
+} from '$lib/server/modules/foods/foods-api.service';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!locals.user) error(401, 'Unauthorized');

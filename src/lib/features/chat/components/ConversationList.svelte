@@ -10,13 +10,7 @@
 		avatarByUserId?: Record<number, string | null | undefined>;
 	};
 
-	let {
-		conversations,
-		selectedId,
-		mode,
-		onSelect,
-		avatarByUserId = {}
-	}: Props = $props();
+	let { conversations, selectedId, mode, onSelect, avatarByUserId = {} }: Props = $props();
 
 	let q = $state('');
 
@@ -70,9 +64,18 @@
 				<div class="conv-row">
 					<div class="conv-left">
 						{#if avatarFor(c)}
-							<img src={avatarFor(c)!} alt="" class="conv-avatar" class:active={selectedId === c.id} />
+							<img
+								src={avatarFor(c)!}
+								alt=""
+								class="conv-avatar"
+								class:active={selectedId === c.id}
+							/>
 						{:else}
-							<UserAvatarFallback name={displayUser(peerOf(c))} px={40} active={selectedId === c.id} />
+							<UserAvatarFallback
+								name={displayUser(peerOf(c))}
+								px={40}
+								active={selectedId === c.id}
+							/>
 						{/if}
 						<div class="conv-text">
 							<div class="conv-name-row">

@@ -63,7 +63,12 @@ export async function loadDietitianMealPlanListPage(dietitianId: number) {
 			startDate: mealPlanSessions.startDate
 		})
 		.from(mealPlanSessions)
-		.where(and(inArray(mealPlanSessions.clientId, patientUserIds), eq(mealPlanSessions.dietitianId, dietitianId)))
+		.where(
+			and(
+				inArray(mealPlanSessions.clientId, patientUserIds),
+				eq(mealPlanSessions.dietitianId, dietitianId)
+			)
+		)
 		.orderBy(desc(mealPlanSessions.id))
 		.all() as SessionListRow[];
 
@@ -111,7 +116,12 @@ export async function actionCreateMealPlanSession(params: {
 	const clientMembership = db
 		.select({ roles: memberships.roles })
 		.from(memberships)
-		.where(and(eq(memberships.userId, clientId), eq(memberships.organizationId, dietitianMembership.orgId)))
+		.where(
+			and(
+				eq(memberships.userId, clientId),
+				eq(memberships.organizationId, dietitianMembership.orgId)
+			)
+		)
 		.get();
 
 	if (!clientMembership) {
@@ -157,9 +167,7 @@ export async function actionCreateMealPlanSession(params: {
 	redirect(302, `/dietitian/meal-plan/${targetSessionId}`);
 }
 
-export type ActivatePatientResult =
-	| { ok: true; message: string }
-	| { ok: false; error: string };
+export type ActivatePatientResult = { ok: true; message: string } | { ok: false; error: string };
 
 /**
  * Activates a patient account by email: grants app access and attaches them to the dietitian's organization

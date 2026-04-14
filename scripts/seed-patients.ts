@@ -7,7 +7,9 @@ import * as schema from '../src/lib/server/db/schema';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
-	console.error('DATABASE_URL is not set. Example: DATABASE_URL=file:local.db npx tsx scripts/seed-patients.ts');
+	console.error(
+		'DATABASE_URL is not set. Example: DATABASE_URL=file:local.db npx tsx scripts/seed-patients.ts'
+	);
 	process.exit(1);
 }
 

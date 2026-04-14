@@ -22,8 +22,9 @@ if (!DATABASE_URL) {
 	process.exit(1);
 }
 
-const DEMO_DIETITIAN_EMAIL =
-	(process.env.DEMO_DIETITIAN_EMAIL ?? 'demo.dietitian@demo-nutricare.io').toLowerCase();
+const DEMO_DIETITIAN_EMAIL = (
+	process.env.DEMO_DIETITIAN_EMAIL ?? 'demo.dietitian@demo-nutricare.io'
+).toLowerCase();
 const DEMO_DIETITIAN_PASSWORD = process.env.DEMO_DIETITIAN_PASSWORD ?? 'NutriDemo2026!';
 const DEMO_PATIENT_PASSWORD = process.env.DEMO_PATIENT_PASSWORD ?? DEMO_DIETITIAN_PASSWORD;
 
@@ -43,8 +44,7 @@ const PATIENTS = [
 			severity: 'moderate' as const,
 			diagnosedDate: '2025-11-01',
 			status: 'managed' as const,
-			notes:
-				'الهدف: عجز طفيف من السعرات مع زيادة البروتين والنشاط. متابعة أسبوعية للوزن والمحيط.'
+			notes: 'الهدف: عجز طفيف من السعرات مع زيادة البروتين والنشاط. متابعة أسبوعية للوزن والمحيط.'
 		},
 		/** Adherence pattern seed 0–9 per (day, meal slot). */
 		trackTier: 'high' as const
@@ -61,8 +61,7 @@ const PATIENTS = [
 			severity: 'mild' as const,
 			diagnosedDate: '2024-08-15',
 			status: 'active' as const,
-			notes:
-				'توزيع الكربوهيدرات على الوجبات، تفضيل مؤشر جلايسيمي منخفض، مراقبة السكر الصائم.'
+			notes: 'توزيع الكربوهيدرات على الوجبات، تفضيل مؤشر جلايسيمي منخفض، مراقبة السكر الصائم.'
 		},
 		trackTier: 'mid' as const
 	},
@@ -78,8 +77,7 @@ const PATIENTS = [
 			severity: 'mild' as const,
 			diagnosedDate: '2026-02-20',
 			status: 'active' as const,
-			notes:
-				'تركيز على الحديد والبروتين والأوميغا 3، مع مراعاة الرضاعة الطبيعية والترطيب.'
+			notes: 'تركيز على الحديد والبروتين والأوميغا 3، مع مراعاة الرضاعة الطبيعية والترطيب.'
 		},
 		trackTier: 'low' as const
 	}
@@ -104,7 +102,11 @@ function addDays(base: Date, days: number): Date {
 
 type TrackOutcome = 'eaten' | 'skipped' | 'none';
 
-function outcomeForSlot(tier: 'high' | 'mid' | 'low', dayIdx: number, slotIdx: number): TrackOutcome {
+function outcomeForSlot(
+	tier: 'high' | 'mid' | 'low',
+	dayIdx: number,
+	slotIdx: number
+): TrackOutcome {
 	const h = (dayIdx * 13 + slotIdx * 7 + (tier === 'high' ? 2 : tier === 'mid' ? 0 : 5)) % 12;
 	if (tier === 'high') {
 		if (h === 0) return 'skipped';
@@ -152,7 +154,9 @@ async function main() {
 		tuna: foodIdByName('Canned Tuna')
 	};
 	if (!foodIds.rice || !foodIds.chicken) {
-		console.error('Missing baseline food_items. Run: npm run db:seed-meal (or full npm run db:seed) first.');
+		console.error(
+			'Missing baseline food_items. Run: npm run db:seed-meal (or full npm run db:seed) first.'
+		);
 		process.exit(1);
 	}
 
@@ -198,7 +202,11 @@ async function main() {
 	}
 
 	let orgId: number;
-	const orgRow = db.select().from(schema.organizations).where(eq(schema.organizations.name, ORG_NAME)).get();
+	const orgRow = db
+		.select()
+		.from(schema.organizations)
+		.where(eq(schema.organizations.name, ORG_NAME))
+		.get();
 	if (orgRow) {
 		orgId = orgRow.id;
 	} else {
@@ -211,7 +219,11 @@ async function main() {
 		console.log(`Created organization id=${orgId}`);
 	}
 
-	const memD = db.select().from(schema.memberships).where(eq(schema.memberships.userId, dietitianId)).get();
+	const memD = db
+		.select()
+		.from(schema.memberships)
+		.where(eq(schema.memberships.userId, dietitianId))
+		.get();
 	if (memD) {
 		db.update(schema.memberships)
 			.set({ organizationId: orgId, roles: JSON.stringify(['dietitian']), updatedAt: now })
@@ -269,7 +281,11 @@ async function main() {
 		}
 		patientIds.push(uid);
 
-		const mem = db.select().from(schema.memberships).where(eq(schema.memberships.userId, uid)).get();
+		const mem = db
+			.select()
+			.from(schema.memberships)
+			.where(eq(schema.memberships.userId, uid))
+			.get();
 		if (mem) {
 			db.update(schema.memberships)
 				.set({ organizationId: orgId, roles: JSON.stringify(['patient']), updatedAt: now })
@@ -374,7 +390,9 @@ async function main() {
 		}
 	];
 	for (const f of customFoods) {
-		db.insert(schema.foodItems).values({ ...f, createdBy: dietitianId }).run();
+		db.insert(schema.foodItems)
+			.values({ ...f, createdBy: dietitianId })
+			.run();
 	}
 
 	const [catBreakfast] = db
@@ -409,8 +427,7 @@ async function main() {
 			nameAr: 'وعاء شوفان بالبروتين',
 			categoryId: catBreakfast.id,
 			portions: 1,
-			steps:
-				'اطبخ الشوفان بالحليب أو الماء، أضف الزبادي بعد الطهي، رشّ القرفة، زين بالموز المقطع.',
+			steps: 'اطبخ الشوفان بالحليب أو الماء، أضف الزبادي بعد الطهي، رشّ القرفة، زين بالموز المقطع.',
 			nutrients: JSON.stringify({ calories: 380, protein: 22, carbs: 52, fat: 9, fiber: 8 }),
 			ingredients: [
 				{ foodItemId: foodIds.oats!, quantity: 50, unit: 'g' },
@@ -423,7 +440,8 @@ async function main() {
 			nameAr: 'أومليت بالخضار',
 			categoryId: catBreakfast.id,
 			portions: 1,
-			steps: 'اخفق البيض، أضف البروكلي المفروم المسلوق قليلاً، اطبخ على مقلاة غير لاصقة مع ملعقة صغيرة زيت.',
+			steps:
+				'اخفق البيض، أضف البروكلي المفروم المسلوق قليلاً، اطبخ على مقلاة غير لاصقة مع ملعقة صغيرة زيت.',
 			nutrients: JSON.stringify({ calories: 290, protein: 20, carbs: 8, fat: 20, fiber: 3 }),
 			ingredients: [
 				{ foodItemId: foodIds.egg!, quantity: 2, unit: 'piece' },
@@ -623,8 +641,7 @@ async function main() {
 							mealId,
 							date: dateStr,
 							status: 'skipped',
-							replacementNote:
-								slot.type === 'dinner' ? 'استبدال بوجبة مطعم مشابهة بالسعرات' : null
+							replacementNote: slot.type === 'dinner' ? 'استبدال بوجبة مطعم مشابهة بالسعرات' : null
 						})
 						.run();
 				}

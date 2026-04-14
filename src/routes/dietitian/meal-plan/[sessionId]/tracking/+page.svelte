@@ -15,11 +15,28 @@
 		d.setDate(d.getDate() + days);
 		return toLocalYmd(d);
 	}
-	function prevDate(dateStr: string, type: string) { return shiftDate(dateStr, type === 'daily' ? -1 : -7); }
-	function nextDate(dateStr: string, type: string) { return shiftDate(dateStr, type === 'daily' ?  1 :  7); }
+	function prevDate(dateStr: string, type: string) {
+		return shiftDate(dateStr, type === 'daily' ? -1 : -7);
+	}
+	function nextDate(dateStr: string, type: string) {
+		return shiftDate(dateStr, type === 'daily' ? 1 : 7);
+	}
 
-	const AR_DAYS   = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
-	const AR_MONTHS = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+	const AR_DAYS = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+	const AR_MONTHS = [
+		'يناير',
+		'فبراير',
+		'مارس',
+		'أبريل',
+		'مايو',
+		'يونيو',
+		'يوليو',
+		'أغسطس',
+		'سبتمبر',
+		'أكتوبر',
+		'نوفمبر',
+		'ديسمبر'
+	];
 
 	function fmtDate(dateStr: string) {
 		const d = new Date(dateStr + 'T00:00:00');
@@ -29,13 +46,17 @@
 	function navLabel() {
 		if (data.planType === 'daily') return fmtDate(data.dateFrom);
 		const from = new Date(data.dateFrom + 'T00:00:00');
-		const to   = new Date(data.dateTo   + 'T00:00:00');
+		const to = new Date(data.dateTo + 'T00:00:00');
 		return `${AR_DAYS[from.getDay()]} ${from.getDate()} ${AR_MONTHS[from.getMonth()]} — ${AR_DAYS[to.getDay()]} ${to.getDate()} ${AR_MONTHS[to.getMonth()]} ${to.getFullYear()}`;
 	}
 
 	const MEAL_ICONS: Record<string, string> = {
-		breakfast: '🌅', morning_snack: '🍎', lunch: '☀️',
-		afternoon_snack: '🍊', dinner: '🌙', other: '🍽️'
+		breakfast: '🌅',
+		morning_snack: '🍎',
+		lunch: '☀️',
+		afternoon_snack: '🍊',
+		dinner: '🌙',
+		other: '🍽️'
 	};
 
 	const td = $derived(data.trackingData);
@@ -44,7 +65,8 @@
 		if (total === 0) return '';
 		const pct = value / total;
 		const angle = pct * 2 * Math.PI;
-		const cx = 50, cy = 50;
+		const cx = 50,
+			cy = 50;
 		const x1 = cx + r * Math.sin(startAngle);
 		const y1 = cy - r * Math.cos(startAngle);
 		const x2 = cx + r * Math.sin(startAngle + angle);
@@ -59,8 +81,14 @@
 		if (total === 0) return [];
 		let angle = 0;
 		const segs = [];
-		if (td.eaten > 0)   { segs.push({ d: donutPath(td.eaten,   total, angle), color: '#3cb96b' }); angle += (td.eaten   / total) * 2 * Math.PI; }
-		if (td.skipped > 0) { segs.push({ d: donutPath(td.skipped, total, angle), color: '#f59e0b' }); angle += (td.skipped / total) * 2 * Math.PI; }
+		if (td.eaten > 0) {
+			segs.push({ d: donutPath(td.eaten, total, angle), color: '#3cb96b' });
+			angle += (td.eaten / total) * 2 * Math.PI;
+		}
+		if (td.skipped > 0) {
+			segs.push({ d: donutPath(td.skipped, total, angle), color: '#f59e0b' });
+			angle += (td.skipped / total) * 2 * Math.PI;
+		}
 		if (td.notEaten > 0) segs.push({ d: donutPath(td.notEaten, total, angle), color: '#e8eaed' });
 		return segs;
 	});
@@ -75,6 +103,315 @@
 		rel="stylesheet"
 	/>
 </svelte:head>
+
+<div class="page">
+	<!-- Topbar -->
+	<div class="topbar">
+		<a href="/dietitian/meal-plan/{data.session.id}" class="back-link topbar-back">
+			<svg
+				width="15"
+				height="15"
+				fill="none"
+				stroke="currentColor"
+				viewBox="0 0 24 24"
+				aria-hidden="true"
+			>
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+			</svg>
+			الخطة الغذائية
+		</a>
+		<div class="topbar-divider" aria-hidden="true"></div>
+		<div class="topbar-main">
+			<div class="topbar-user">
+				<UserAvatarFallback name={data.patient.name} px={36} />
+				<div class="topbar-user-text">
+					<div class="topbar-name">{data.patient.name}</div>
+					<div class="topbar-meta">
+						{data.planType === 'daily' ? data.dateFrom : `${data.dateFrom} — ${data.dateTo}`}
+					</div>
+				</div>
+			</div>
+			<div class="topbar-toggles">
+				<a
+					href="?type=daily&date={data.dateFrom}"
+					class="toggle-pill"
+					class:on={data.planType === 'daily'}
+					class:off={data.planType !== 'daily'}
+				>
+					يومية
+				</a>
+				<a
+					href="?type=weekly&date={data.dateFrom}"
+					class="toggle-pill"
+					class:on={data.planType === 'weekly'}
+					class:off={data.planType !== 'weekly'}
+				>
+					أسبوعية
+				</a>
+			</div>
+		</div>
+		<div class="badge-tracker topbar-badge">
+			<svg
+				width="13"
+				height="13"
+				fill="none"
+				stroke="currentColor"
+				viewBox="0 0 24 24"
+				aria-hidden="true"
+			>
+				<path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					stroke-width="2"
+					d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+				/>
+			</svg>
+			<span>لوحة التتبع</span>
+		</div>
+	</div>
+
+	<div class="content">
+		<!-- Date navigation -->
+		<div class="week-nav">
+			<a
+				class="week-nav-arrow"
+				href="?type={data.planType}&date={prevDate(data.dateFrom, data.planType)}"
+				title="السابق"
+			>
+				<svg
+					width="18"
+					height="18"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2.2"
+					viewBox="0 0 24 24"
+					><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg
+				>
+			</a>
+			<div class="week-nav-center" aria-live="polite">
+				<span>{navLabel()}</span>
+			</div>
+			<a
+				class="week-nav-arrow"
+				href="?type={data.planType}&date={nextDate(data.dateFrom, data.planType)}"
+				title="التالي"
+			>
+				<svg
+					width="18"
+					height="18"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2.2"
+					viewBox="0 0 24 24"
+					><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg
+				>
+			</a>
+		</div>
+
+		{#if !td}
+			<div class="empty-box">
+				<div
+					style="width:64px; height:64px; background:#edf9f2; border-radius:50%; display:flex; align-items:center; justify-content:center;"
+				>
+					<svg width="28" height="28" fill="none" stroke="#3cb96b" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="1.5"
+							d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+						/>
+					</svg>
+				</div>
+				<p style="font-size:16px; font-weight:600; color:#1a1d23; margin:0;">
+					لا توجد خطة غذائية بعد
+				</p>
+				<p style="font-size:13px; color:#8b909a; margin:0;">
+					أنشئ الخطة أولاً ثم ستظهر بيانات التتبع هنا
+				</p>
+			</div>
+		{:else}
+			<!-- Stats -->
+			<div class="stat-grid">
+				<div class="stat-card">
+					<div class="stat-label">الالتزام الإجمالي</div>
+					<div class="stat-value" style="color: var(--nc-accent-2);">{td.adherenceRate}%</div>
+					<div class="progress-bar">
+						<div class="progress-fill" style="width:{td.adherenceRate}%;"></div>
+					</div>
+				</div>
+				<div class="stat-card">
+					<div class="stat-label">إجمالي الوجبات</div>
+					<div class="stat-value">{td.totalMealSlots}</div>
+					<div class="stat-sub">
+						<span style="color:#3cb96b; font-weight:600;">{td.eaten} متناولة</span>
+						<span style="color:#f59e0b; font-weight:600;">{td.skipped} متخطية</span>
+						<span style="color:#9ca3af; font-weight:600;">{td.notEaten} بلا سجل</span>
+					</div>
+				</div>
+				<div class="stat-card">
+					<div class="stat-label">البدائل المُسجَّلة</div>
+					<div class="stat-value" style="color:#6366f1;">{td.withReplacement}</div>
+					<div class="stat-sub">
+						<span
+							>{td.skipped > 0 ? Math.round((td.withReplacement / td.skipped) * 100) : 0}% من
+							الوجبات المتخطاة لديها ملاحظة</span
+						>
+					</div>
+				</div>
+			</div>
+
+			<!-- Charts -->
+			<div class="charts-row">
+				<!-- Donut -->
+				<div class="card">
+					<div class="card-title">توزيع حالة الوجبات</div>
+					<div class="donut-block">
+						<div style="position: relative; flex-shrink: 0;">
+							<svg width="100" height="100" viewBox="0 0 100 100" aria-hidden="true">
+								<circle cx="50" cy="50" r="38" fill="none" stroke="#f0f2f5" stroke-width="13" />
+								{#each donutSegments() as seg}
+									<path
+										d={seg.d}
+										fill="none"
+										stroke={seg.color}
+										stroke-width="13"
+										stroke-linecap="butt"
+									/>
+								{/each}
+								<text
+									x="50"
+									y="45"
+									text-anchor="middle"
+									fill="#12151c"
+									font-size="15"
+									font-weight="800"
+									font-family="Tajawal,sans-serif">{td.adherenceRate}%</text
+								>
+								<text
+									x="50"
+									y="59"
+									text-anchor="middle"
+									fill="#8b909a"
+									font-size="8.5"
+									font-family="Tajawal,sans-serif">التزام</text
+								>
+							</svg>
+						</div>
+						<div class="donut-legends">
+							<div class="legend-row">
+								<div class="legend-dot" style="background:#3cb96b;"></div>
+								<span>مُتناول</span>
+								<span class="legend-count">{td.eaten}</span>
+							</div>
+							<div class="legend-row">
+								<div class="legend-dot" style="background:#f59e0b;"></div>
+								<span>تم التخطي</span>
+								<span class="legend-count">{td.skipped}</span>
+							</div>
+							<div class="legend-row">
+								<div class="legend-dot" style="background:#e8eaed; border:1px solid #d1d5db;"></div>
+								<span>بلا سجل</span>
+								<span class="legend-count">{td.notEaten}</span>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Daily bars -->
+				<div class="card">
+					<div class="card-title">الأداء اليومي</div>
+					{#if td.dayStats.length === 0}
+						<p class="empty-chart">لا توجد بيانات أيام</p>
+					{:else}
+						<div class="day-bar-scroll">
+							<div class="day-bar-wrap">
+								{#each td.dayStats as day}
+									{@const eH = day.total > 0 ? (day.eaten / day.total) * 100 : 0}
+									{@const sH = day.total > 0 ? (day.skipped / day.total) * 100 : 0}
+									{@const nH = day.total > 0 ? (day.notEaten / day.total) * 100 : 0}
+									<div class="day-bar-col">
+										<div class="day-stacked" style="height:{eH + sH + nH}px; min-height:4px;">
+											<div style="width:100%; height:{eH}px; background:#3cb96b;"></div>
+											<div style="width:100%; height:{sH}px; background:#f59e0b;"></div>
+											<div style="width:100%; height:{nH}px; background:#e8eaed;"></div>
+										</div>
+										<div class="day-label">{day.label.slice(0, 3)}</div>
+										{#if day.date}<div class="day-date">{day.date.slice(5)}</div>{/if}
+									</div>
+								{/each}
+							</div>
+						</div>
+						<div class="bar-legend-row">
+							<div class="legend-row" style="margin-bottom: 0; font-size: 11px;">
+								<div class="legend-dot" style="background:#3cb96b;"></div>
+								<span>متناول</span>
+							</div>
+							<div class="legend-row" style="margin-bottom: 0; font-size: 11px;">
+								<div class="legend-dot" style="background:#f59e0b;"></div>
+								<span>متخطي</span>
+							</div>
+							<div class="legend-row" style="margin-bottom: 0; font-size: 11px;">
+								<div class="legend-dot" style="background:#e8eaed; border:1px solid #d1d5db;"></div>
+								<span>بلا سجل</span>
+							</div>
+						</div>
+					{/if}
+				</div>
+			</div>
+
+			<!-- Meal type breakdown -->
+			{#if Object.keys(td.mealTypeStats).length > 0}
+				<div class="card" style="margin-bottom:14px;">
+					<div class="card-title">الالتزام حسب نوع الوجبة</div>
+					{#each Object.entries(td.mealTypeStats) as [type, stats]}
+						{@const pct = stats.total > 0 ? Math.round((stats.eaten / stats.total) * 100) : 0}
+						{@const fillColor = pct >= 70 ? '#3cb96b' : pct >= 40 ? '#f59e0b' : '#ef4444'}
+						<div class="type-row">
+							<div class="type-label">{MEAL_ICONS[type] ?? '🍽️'} {td.MEAL_NAMES[type] ?? type}</div>
+							<div>
+								<div class="bar-track">
+									<div class="bar-fill" style="width:{pct}%; background:{fillColor};"></div>
+								</div>
+								<div style="display:flex; gap:10px; font-size:10px; color:#8b909a; margin-top:3px;">
+									<span style="color:#3cb96b; font-weight:600;">{stats.eaten} ✓</span>
+									<span style="color:#f59e0b; font-weight:600;">{stats.skipped} ✗</span>
+									<span>{stats.notEaten} —</span>
+								</div>
+							</div>
+							<div class="bar-pct" style="color:{fillColor};">{pct}%</div>
+						</div>
+					{/each}
+				</div>
+			{/if}
+
+			<!-- Replacement notes -->
+			{#if td.replacementNotes.length > 0}
+				<div class="card">
+					<div class="card-title">ملاحظات البدائل</div>
+					{#each td.replacementNotes as note}
+						<div class="note-item">
+							<div style="margin-bottom:6px;">
+								<span class="note-tag">📅 {note.date}</span>
+								<span class="note-tag"
+									>{MEAL_ICONS[note.mealType] ?? '🍽️'}
+									{td.MEAL_NAMES[note.mealType] ?? note.mealType}</span
+								>
+							</div>
+							<div style="font-size:13px; color:#4b5563; line-height:1.5;">{note.note}</div>
+						</div>
+					{/each}
+				</div>
+			{:else if td.skipped > 0}
+				<div class="card">
+					<div class="card-title">ملاحظات البدائل</div>
+					<p style="color:#8b909a; font-size:13px; text-align:center; padding:16px 0;">
+						لا توجد ملاحظات بديل للوجبات المتخطاة
+					</p>
+				</div>
+			{/if}
+		{/if}
+	</div>
+</div>
 
 <style>
 	.page {
@@ -210,7 +547,10 @@
 		font-weight: 600;
 		text-decoration: none;
 		border: 1px solid var(--nc-line);
-		transition: background 0.15s, color 0.15s, border-color 0.15s;
+		transition:
+			background 0.15s,
+			color 0.15s,
+			border-color 0.15s;
 	}
 
 	.toggle-pill.on {
@@ -284,7 +624,9 @@
 		border: 1px solid var(--nc-line);
 		box-shadow: var(--nc-shadow);
 		padding: clamp(14px, 3vw, 20px) clamp(14px, 3vw, 20px);
-		transition: transform 0.2s ease, box-shadow 0.2s ease;
+		transition:
+			transform 0.2s ease,
+			box-shadow 0.2s ease;
 	}
 
 	.stat-card:hover {
@@ -694,247 +1036,3 @@
 		}
 	}
 </style>
-
-<div class="page">
-	<!-- Topbar -->
-	<div class="topbar">
-		<a href="/dietitian/meal-plan/{data.session.id}" class="back-link topbar-back">
-			<svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-			</svg>
-			الخطة الغذائية
-		</a>
-		<div class="topbar-divider" aria-hidden="true"></div>
-		<div class="topbar-main">
-			<div class="topbar-user">
-				<UserAvatarFallback name={data.patient.name} px={36} />
-				<div class="topbar-user-text">
-					<div class="topbar-name">{data.patient.name}</div>
-					<div class="topbar-meta">
-						{data.planType === 'daily' ? data.dateFrom : `${data.dateFrom} — ${data.dateTo}`}
-					</div>
-				</div>
-			</div>
-			<div class="topbar-toggles">
-				<a
-					href="?type=daily&date={data.dateFrom}"
-					class="toggle-pill"
-					class:on={data.planType === 'daily'}
-					class:off={data.planType !== 'daily'}
-				>
-					يومية
-				</a>
-				<a
-					href="?type=weekly&date={data.dateFrom}"
-					class="toggle-pill"
-					class:on={data.planType === 'weekly'}
-					class:off={data.planType !== 'weekly'}
-				>
-					أسبوعية
-				</a>
-			</div>
-		</div>
-		<div class="badge-tracker topbar-badge">
-			<svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					stroke-width="2"
-					d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-				/>
-			</svg>
-			<span>لوحة التتبع</span>
-		</div>
-	</div>
-
-	<div class="content">
-		<!-- Date navigation -->
-		<div class="week-nav">
-			<a class="week-nav-arrow" href="?type={data.planType}&date={prevDate(data.dateFrom, data.planType)}" title="السابق">
-				<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
-			</a>
-			<div class="week-nav-center" aria-live="polite">
-				<span>{navLabel()}</span>
-			</div>
-			<a class="week-nav-arrow" href="?type={data.planType}&date={nextDate(data.dateFrom, data.planType)}" title="التالي">
-				<svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-			</a>
-		</div>
-
-		{#if !td}
-			<div class="empty-box">
-				<div style="width:64px; height:64px; background:#edf9f2; border-radius:50%; display:flex; align-items:center; justify-content:center;">
-					<svg width="28" height="28" fill="none" stroke="#3cb96b" viewBox="0 0 24 24">
-						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-					</svg>
-				</div>
-				<p style="font-size:16px; font-weight:600; color:#1a1d23; margin:0;">لا توجد خطة غذائية بعد</p>
-				<p style="font-size:13px; color:#8b909a; margin:0;">أنشئ الخطة أولاً ثم ستظهر بيانات التتبع هنا</p>
-			</div>
-		{:else}
-			<!-- Stats -->
-			<div class="stat-grid">
-				<div class="stat-card">
-					<div class="stat-label">الالتزام الإجمالي</div>
-					<div class="stat-value" style="color: var(--nc-accent-2);">{td.adherenceRate}%</div>
-					<div class="progress-bar">
-						<div class="progress-fill" style="width:{td.adherenceRate}%;"></div>
-					</div>
-				</div>
-				<div class="stat-card">
-					<div class="stat-label">إجمالي الوجبات</div>
-					<div class="stat-value">{td.totalMealSlots}</div>
-					<div class="stat-sub">
-						<span style="color:#3cb96b; font-weight:600;">{td.eaten} متناولة</span>
-						<span style="color:#f59e0b; font-weight:600;">{td.skipped} متخطية</span>
-						<span style="color:#9ca3af; font-weight:600;">{td.notEaten} بلا سجل</span>
-					</div>
-				</div>
-				<div class="stat-card">
-					<div class="stat-label">البدائل المُسجَّلة</div>
-					<div class="stat-value" style="color:#6366f1;">{td.withReplacement}</div>
-					<div class="stat-sub">
-						<span>{td.skipped > 0 ? Math.round((td.withReplacement / td.skipped) * 100) : 0}% من الوجبات المتخطاة لديها ملاحظة</span>
-					</div>
-				</div>
-			</div>
-
-			<!-- Charts -->
-			<div class="charts-row">
-				<!-- Donut -->
-				<div class="card">
-					<div class="card-title">توزيع حالة الوجبات</div>
-					<div class="donut-block">
-						<div style="position: relative; flex-shrink: 0;">
-							<svg width="100" height="100" viewBox="0 0 100 100" aria-hidden="true">
-								<circle cx="50" cy="50" r="38" fill="none" stroke="#f0f2f5" stroke-width="13" />
-								{#each donutSegments() as seg}
-									<path d={seg.d} fill="none" stroke={seg.color} stroke-width="13" stroke-linecap="butt" />
-								{/each}
-								<text
-									x="50"
-									y="45"
-									text-anchor="middle"
-									fill="#12151c"
-									font-size="15"
-									font-weight="800"
-									font-family="Tajawal,sans-serif">{td.adherenceRate}%</text>
-								<text
-									x="50"
-									y="59"
-									text-anchor="middle"
-									fill="#8b909a"
-									font-size="8.5"
-									font-family="Tajawal,sans-serif">التزام</text>
-							</svg>
-						</div>
-						<div class="donut-legends">
-							<div class="legend-row">
-								<div class="legend-dot" style="background:#3cb96b;"></div>
-								<span>مُتناول</span>
-								<span class="legend-count">{td.eaten}</span>
-							</div>
-							<div class="legend-row">
-								<div class="legend-dot" style="background:#f59e0b;"></div>
-								<span>تم التخطي</span>
-								<span class="legend-count">{td.skipped}</span>
-							</div>
-							<div class="legend-row">
-								<div class="legend-dot" style="background:#e8eaed; border:1px solid #d1d5db;"></div>
-								<span>بلا سجل</span>
-								<span class="legend-count">{td.notEaten}</span>
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<!-- Daily bars -->
-				<div class="card">
-					<div class="card-title">الأداء اليومي</div>
-					{#if td.dayStats.length === 0}
-						<p class="empty-chart">لا توجد بيانات أيام</p>
-					{:else}
-						<div class="day-bar-scroll">
-							<div class="day-bar-wrap">
-								{#each td.dayStats as day}
-									{@const eH = day.total > 0 ? (day.eaten / day.total) * 100 : 0}
-									{@const sH = day.total > 0 ? (day.skipped / day.total) * 100 : 0}
-									{@const nH = day.total > 0 ? (day.notEaten / day.total) * 100 : 0}
-									<div class="day-bar-col">
-										<div class="day-stacked" style="height:{eH + sH + nH}px; min-height:4px;">
-											<div style="width:100%; height:{eH}px; background:#3cb96b;"></div>
-											<div style="width:100%; height:{sH}px; background:#f59e0b;"></div>
-											<div style="width:100%; height:{nH}px; background:#e8eaed;"></div>
-										</div>
-										<div class="day-label">{day.label.slice(0, 3)}</div>
-										{#if day.date}<div class="day-date">{day.date.slice(5)}</div>{/if}
-									</div>
-								{/each}
-							</div>
-						</div>
-						<div class="bar-legend-row">
-							<div class="legend-row" style="margin-bottom: 0; font-size: 11px;">
-								<div class="legend-dot" style="background:#3cb96b;"></div>
-								<span>متناول</span>
-							</div>
-							<div class="legend-row" style="margin-bottom: 0; font-size: 11px;">
-								<div class="legend-dot" style="background:#f59e0b;"></div>
-								<span>متخطي</span>
-							</div>
-							<div class="legend-row" style="margin-bottom: 0; font-size: 11px;">
-								<div class="legend-dot" style="background:#e8eaed; border:1px solid #d1d5db;"></div>
-								<span>بلا سجل</span>
-							</div>
-						</div>
-					{/if}
-				</div>
-			</div>
-
-			<!-- Meal type breakdown -->
-			{#if Object.keys(td.mealTypeStats).length > 0}
-				<div class="card" style="margin-bottom:14px;">
-					<div class="card-title">الالتزام حسب نوع الوجبة</div>
-					{#each Object.entries(td.mealTypeStats) as [type, stats]}
-						{@const pct = stats.total > 0 ? Math.round((stats.eaten / stats.total) * 100) : 0}
-						{@const fillColor = pct >= 70 ? '#3cb96b' : pct >= 40 ? '#f59e0b' : '#ef4444'}
-						<div class="type-row">
-							<div class="type-label">{MEAL_ICONS[type] ?? '🍽️'} {td.MEAL_NAMES[type] ?? type}</div>
-							<div>
-								<div class="bar-track">
-									<div class="bar-fill" style="width:{pct}%; background:{fillColor};"></div>
-								</div>
-								<div style="display:flex; gap:10px; font-size:10px; color:#8b909a; margin-top:3px;">
-									<span style="color:#3cb96b; font-weight:600;">{stats.eaten} ✓</span>
-									<span style="color:#f59e0b; font-weight:600;">{stats.skipped} ✗</span>
-									<span>{stats.notEaten} —</span>
-								</div>
-							</div>
-							<div class="bar-pct" style="color:{fillColor};">{pct}%</div>
-						</div>
-					{/each}
-				</div>
-			{/if}
-
-			<!-- Replacement notes -->
-			{#if td.replacementNotes.length > 0}
-				<div class="card">
-					<div class="card-title">ملاحظات البدائل</div>
-					{#each td.replacementNotes as note}
-						<div class="note-item">
-							<div style="margin-bottom:6px;">
-								<span class="note-tag">📅 {note.date}</span>
-								<span class="note-tag">{MEAL_ICONS[note.mealType] ?? '🍽️'} {td.MEAL_NAMES[note.mealType] ?? note.mealType}</span>
-							</div>
-							<div style="font-size:13px; color:#4b5563; line-height:1.5;">{note.note}</div>
-						</div>
-					{/each}
-				</div>
-			{:else if td.skipped > 0}
-				<div class="card">
-					<div class="card-title">ملاحظات البدائل</div>
-					<p style="color:#8b909a; font-size:13px; text-align:center; padding:16px 0;">لا توجد ملاحظات بديل للوجبات المتخطاة</p>
-				</div>
-			{/if}
-		{/if}
-	</div>
-</div>

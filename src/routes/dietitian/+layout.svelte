@@ -61,6 +61,171 @@
 	/>
 </svelte:head>
 
+<div dir="rtl" class="layout-shell">
+	<header class="mobile-top" aria-label="شريط التطبيق">
+		<div class="mobile-top-inner">
+			<div class="mobile-brand">
+				<img src="/logo-name.png" alt="نيوتريكير" />
+				<span class="mobile-brand-mark" aria-hidden="true">لوحة الأخصائي</span>
+			</div>
+			<button
+				type="button"
+				class="account-trigger"
+				onclick={toggleAccount}
+				aria-expanded={accountOpen}
+				aria-controls="dietitian-account-drawer"
+				aria-label="الحساب والإعدادات"
+			>
+				<UserAvatarFallback name={data.user.name} px={32} />
+				<span class="chevron" aria-hidden="true">
+					<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2.2"
+							d="M19 9l-7 7-7-7"
+						/>
+					</svg>
+				</span>
+			</button>
+		</div>
+	</header>
+
+	<!-- Sidebar (hidden on mobile) -->
+	<aside class="sidebar">
+		<div class="brand-block">
+			<img
+				src="/logo-name.png"
+				alt="نيوتريكير"
+				style="height:38px; width:auto; max-width:168px; object-fit:contain;"
+			/>
+		</div>
+
+		<nav class="nav-area" aria-label="التنقل الرئيسي">
+			{#each navItems as item}
+				{@const active = isActive(item.href)}
+				<a href={item.href} class="nav-link" class:active>
+					<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						{@html item.icon}
+					</svg>
+					{item.label}
+				</a>
+			{/each}
+		</nav>
+
+		<div class="user-block">
+			<div class="user-row">
+				<UserAvatarFallback name={data.user.name} px={36} />
+				<div style="flex:1; min-width:0;">
+					<p
+						style="font-size:13px; font-weight:700; color:var(--nc-ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin:0;"
+					>
+						{data.user.name}
+					</p>
+					<p
+						style="font-size:11px; color:var(--nc-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin:2px 0 0;"
+					>
+						{data.user.email}
+					</p>
+				</div>
+			</div>
+			<form method="POST" action="/logout">
+				<button type="submit" class="logout-btn">
+					<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+						/>
+					</svg>
+					تسجيل الخروج
+				</button>
+			</form>
+		</div>
+	</aside>
+
+	<!-- Main content -->
+	<main class="main-content">
+		{@render children()}
+	</main>
+
+	<!-- Bottom nav (mobile only) -->
+	<nav class="bottom-nav" dir="rtl" aria-label="التنقل السفلي">
+		<div class="bottom-nav-inner">
+			{#each navItems as item}
+				{@const active = isActive(item.href)}
+				<a href={item.href} class="bottom-nav-item" class:active>
+					<svg
+						width="22"
+						height="22"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+						style="opacity:{active ? '1' : '0.6'};"
+					>
+						{@html item.icon}
+					</svg>
+					<span>{item.shortLabel}</span>
+				</a>
+			{/each}
+		</div>
+	</nav>
+
+	<button
+		type="button"
+		class="drawer-backdrop"
+		class:visible={accountOpen}
+		onclick={closeAccount}
+		aria-label="إغلاق القائمة"
+		aria-hidden={!accountOpen}
+		tabindex={accountOpen ? 0 : -1}
+	></button>
+
+	<aside
+		id="dietitian-account-drawer"
+		class="account-drawer"
+		class:open={accountOpen}
+		aria-hidden={!accountOpen}
+	>
+		<div class="drawer-head">
+			<h2 class="drawer-title">حسابك</h2>
+			<button type="button" class="drawer-close" onclick={closeAccount} aria-label="إغلاق">
+				<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M6 18L18 6M6 6l12 12"
+					/>
+				</svg>
+			</button>
+		</div>
+		<div class="drawer-user">
+			<UserAvatarFallback name={data.user.name} px={44} />
+			<div class="drawer-user-meta">
+				<p class="drawer-user-name">{data.user.name}</p>
+				<p class="drawer-user-email">{data.user.email}</p>
+			</div>
+		</div>
+		<div class="drawer-logout">
+			<form method="POST" action="/logout">
+				<button type="submit" class="logout-btn">
+					<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+						/>
+					</svg>
+					تسجيل الخروج
+				</button>
+			</form>
+		</div>
+	</aside>
+</div>
+
 <style>
 	.layout-shell {
 		--nc-ink: #121816;
@@ -398,7 +563,8 @@
 		box-shadow: 16px 0 48px rgba(18, 24, 22, 0.12);
 		border-inline-end: 1px solid var(--nc-line);
 		flex-direction: column;
-		padding: calc(12px + env(safe-area-inset-top, 0px)) 16px max(20px, env(safe-area-inset-bottom, 0px));
+		padding: calc(12px + env(safe-area-inset-top, 0px)) 16px
+			max(20px, env(safe-area-inset-bottom, 0px));
 		transform: translateX(-100%);
 		transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 		visibility: hidden;
@@ -561,7 +727,8 @@
 		.main-content {
 			padding-top: calc(56px + env(safe-area-inset-top, 0px));
 			padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px));
-			padding-inline: max(12px, env(safe-area-inset-left, 0px)) max(12px, env(safe-area-inset-right, 0px));
+			padding-inline: max(12px, env(safe-area-inset-left, 0px))
+				max(12px, env(safe-area-inset-right, 0px));
 		}
 
 		.bottom-nav-inner {
@@ -592,161 +759,3 @@
 		}
 	}
 </style>
-
-<div dir="rtl" class="layout-shell">
-	<header class="mobile-top" aria-label="شريط التطبيق">
-		<div class="mobile-top-inner">
-			<div class="mobile-brand">
-				<img src="/logo-name.png" alt="نيوتريكير" />
-				<span class="mobile-brand-mark" aria-hidden="true">لوحة الأخصائي</span>
-			</div>
-			<button
-				type="button"
-				class="account-trigger"
-				onclick={toggleAccount}
-				aria-expanded={accountOpen}
-				aria-controls="dietitian-account-drawer"
-				aria-label="الحساب والإعدادات"
-			>
-				<UserAvatarFallback name={data.user.name} px={32} />
-				<span class="chevron" aria-hidden="true">
-					<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2.2"
-							d="M19 9l-7 7-7-7"
-						/>
-					</svg>
-				</span>
-			</button>
-		</div>
-	</header>
-
-	<!-- Sidebar (hidden on mobile) -->
-	<aside class="sidebar">
-		<div class="brand-block">
-			<img
-				src="/logo-name.png"
-				alt="نيوتريكير"
-				style="height:38px; width:auto; max-width:168px; object-fit:contain;"
-			/>
-		</div>
-
-		<nav class="nav-area" aria-label="التنقل الرئيسي">
-			{#each navItems as item}
-				{@const active = isActive(item.href)}
-				<a href={item.href} class="nav-link" class:active>
-					<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						{@html item.icon}
-					</svg>
-					{item.label}
-				</a>
-			{/each}
-		</nav>
-
-		<div class="user-block">
-			<div class="user-row">
-				<UserAvatarFallback name={data.user.name} px={36} />
-				<div style="flex:1; min-width:0;">
-					<p
-						style="font-size:13px; font-weight:700; color:var(--nc-ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin:0;"
-					>
-						{data.user.name}
-					</p>
-					<p
-						style="font-size:11px; color:var(--nc-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin:2px 0 0;"
-					>
-						{data.user.email}
-					</p>
-				</div>
-			</div>
-			<form method="POST" action="/logout">
-				<button type="submit" class="logout-btn">
-					<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-						/>
-					</svg>
-					تسجيل الخروج
-				</button>
-			</form>
-		</div>
-	</aside>
-
-	<!-- Main content -->
-	<main class="main-content">
-		{@render children()}
-	</main>
-
-	<!-- Bottom nav (mobile only) -->
-	<nav class="bottom-nav" dir="rtl" aria-label="التنقل السفلي">
-		<div class="bottom-nav-inner">
-			{#each navItems as item}
-				{@const active = isActive(item.href)}
-				<a href={item.href} class="bottom-nav-item" class:active>
-					<svg width="22" height="22" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="opacity:{active ? '1' : '0.6'};">
-						{@html item.icon}
-					</svg>
-					<span>{item.shortLabel}</span>
-				</a>
-			{/each}
-		</div>
-	</nav>
-
-	<button
-		type="button"
-		class="drawer-backdrop"
-		class:visible={accountOpen}
-		onclick={closeAccount}
-		aria-label="إغلاق القائمة"
-		aria-hidden={!accountOpen}
-		tabindex={accountOpen ? 0 : -1}
-	></button>
-
-	<aside
-		id="dietitian-account-drawer"
-		class="account-drawer"
-		class:open={accountOpen}
-		aria-hidden={!accountOpen}
-	>
-		<div class="drawer-head">
-			<h2 class="drawer-title">حسابك</h2>
-			<button type="button" class="drawer-close" onclick={closeAccount} aria-label="إغلاق">
-				<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M6 18L18 6M6 6l12 12"
-					/>
-				</svg>
-			</button>
-		</div>
-		<div class="drawer-user">
-			<UserAvatarFallback name={data.user.name} px={44} />
-			<div class="drawer-user-meta">
-				<p class="drawer-user-name">{data.user.name}</p>
-				<p class="drawer-user-email">{data.user.email}</p>
-			</div>
-		</div>
-		<div class="drawer-logout">
-			<form method="POST" action="/logout">
-				<button type="submit" class="logout-btn">
-					<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-						/>
-					</svg>
-					تسجيل الخروج
-				</button>
-			</form>
-		</div>
-	</aside>
-</div>

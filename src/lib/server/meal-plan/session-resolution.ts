@@ -74,5 +74,7 @@ export function resolveWorkingSession(
 export function resolveWorkingSessionFromRows(rows: SessionListRow[]): SessionListRow | null {
 	if (!rows.length) return null;
 	const sorted = [...rows].sort((a, b) => b.id - a.id);
-	return sorted.find((s) => s.status === 'active') ?? sorted.find((s) => s.status === 'draft') ?? null;
+	return (
+		sorted.find((s) => s.status === 'active') ?? sorted.find((s) => s.status === 'draft') ?? null
+	);
 }

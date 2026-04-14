@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { invalidate } from '$app/navigation';
-import {
-	generateRecipeWithAi,
-	searchRecipeFoods
-} from '$lib/features/recipes/services/recipes-api';
+	import {
+		generateRecipeWithAi,
+		searchRecipeFoods
+	} from '$lib/features/recipes/services/recipes-api';
 	import type { PageData, ActionData } from '../../../../routes/dietitian/recipes/$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -21,7 +21,19 @@ import {
 	let editLoading = $state(false);
 
 	// Create modal — ingredient search
-	type CreateIng = { foodId: number; name: string; nameAr: string | null; quantity: number; unit: string; calories: number; protein: number; carbs: number; fat: number; fiber: number; portionSize: number };
+	type CreateIng = {
+		foodId: number;
+		name: string;
+		nameAr: string | null;
+		quantity: number;
+		unit: string;
+		calories: number;
+		protein: number;
+		carbs: number;
+		fat: number;
+		fiber: number;
+		portionSize: number;
+	};
 	let createIngredients = $state<CreateIng[]>([]);
 	let createIngSearch = $state('');
 	let createIngResults = $state<CreateIng[]>([]);
@@ -31,12 +43,29 @@ import {
 	async function searchCreateIng() {
 		clearTimeout(createIngTimer);
 		createIngTimer = setTimeout(async () => {
-			if (createIngSearch.length < 2) { createIngResults = []; return; }
+			if (createIngSearch.length < 2) {
+				createIngResults = [];
+				return;
+			}
 			createIngLoading = true;
 			try {
 				const raw = await searchRecipeFoods(createIngSearch);
-				createIngResults = raw.map(f => ({ foodId: f.id, name: f.name, nameAr: f.nameAr, quantity: 100, unit: f.unit || 'g', calories: f.calories, protein: f.protein, carbs: f.carbs, fat: f.fat, fiber: f.fiber, portionSize: f.portionSize || 100 }));
-			} finally { createIngLoading = false; }
+				createIngResults = raw.map((f) => ({
+					foodId: f.id,
+					name: f.name,
+					nameAr: f.nameAr,
+					quantity: 100,
+					unit: f.unit || 'g',
+					calories: f.calories,
+					protein: f.protein,
+					carbs: f.carbs,
+					fat: f.fat,
+					fiber: f.fiber,
+					portionSize: f.portionSize || 100
+				}));
+			} finally {
+				createIngLoading = false;
+			}
 		}, 320);
 	}
 
@@ -59,7 +88,9 @@ import {
 		const file = (e.target as HTMLInputElement).files?.[0];
 		if (!file) return;
 		const reader = new FileReader();
-		reader.onload = (ev) => { createRecipeImagePreview = ev.target?.result as string; };
+		reader.onload = (ev) => {
+			createRecipeImagePreview = ev.target?.result as string;
+		};
 		reader.readAsDataURL(file);
 	}
 
@@ -67,7 +98,9 @@ import {
 		const file = (e.target as HTMLInputElement).files?.[0];
 		if (!file) return;
 		const reader = new FileReader();
-		reader.onload = (ev) => { editRecipeImagePreview = ev.target?.result as string; };
+		reader.onload = (ev) => {
+			editRecipeImagePreview = ev.target?.result as string;
+		};
 		reader.readAsDataURL(file);
 	}
 
@@ -80,15 +113,23 @@ import {
 	}
 
 	const createTotals = $derived(() => {
-		let cal = 0, pro = 0, carb = 0, fat = 0;
+		let cal = 0,
+			pro = 0,
+			carb = 0,
+			fat = 0;
 		for (const ing of createIngredients) {
 			const f = ing.quantity / (ing.portionSize || 100);
-			cal  += ing.calories * f;
-			pro  += ing.protein  * f;
-			carb += ing.carbs    * f;
-			fat  += ing.fat      * f;
+			cal += ing.calories * f;
+			pro += ing.protein * f;
+			carb += ing.carbs * f;
+			fat += ing.fat * f;
 		}
-		return { cal: Math.round(cal), pro: Math.round(pro), carb: Math.round(carb), fat: Math.round(fat) };
+		return {
+			cal: Math.round(cal),
+			pro: Math.round(pro),
+			carb: Math.round(carb),
+			fat: Math.round(fat)
+		};
 	});
 
 	type EditRecipeLine =
@@ -102,7 +143,10 @@ import {
 			const nl = s.indexOf('\n\n');
 			if (nl !== -1) {
 				return {
-					yield: s.slice(0, nl).replace(/^الناتج:\s*/, '').trim(),
+					yield: s
+						.slice(0, nl)
+						.replace(/^الناتج:\s*/, '')
+						.trim(),
 					body: s.slice(nl + 2)
 				};
 			}
@@ -111,7 +155,9 @@ import {
 		return { yield: '', body: s };
 	}
 
-	function buildEditLinesFromRecipe(ingredients: (typeof data.recipes)[0]['ingredients']): EditRecipeLine[] {
+	function buildEditLinesFromRecipe(
+		ingredients: (typeof data.recipes)[0]['ingredients']
+	): EditRecipeLine[] {
 		const out: EditRecipeLine[] = [];
 		for (const i of ingredients) {
 			if (i.ingredient.foodItemId && i.food) {
@@ -250,7 +296,12 @@ import {
 			carb += ing.carbs * f;
 			fat += ing.fat * f;
 		}
-		return { cal: Math.round(cal), pro: Math.round(pro), carb: Math.round(carb), fat: Math.round(fat) };
+		return {
+			cal: Math.round(cal),
+			pro: Math.round(pro),
+			carb: Math.round(carb),
+			fat: Math.round(fat)
+		};
 	});
 
 	// AI Modal state
@@ -334,12 +385,38 @@ import {
 			</p>
 		</div>
 		<div class="header-actions">
-			<button class="btn btn-ai" onclick={() => { resetAIModal(); showAIModal = true; }}>
-				<svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
+			<button
+				class="btn btn-ai"
+				onclick={() => {
+					resetAIModal();
+					showAIModal = true;
+				}}
+			>
+				<svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+					><path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+					/></svg
+				>
 				توليد بالذكاء الاصطناعي
 			</button>
-			<button class="btn btn-primary" onclick={() => { resetCreate(); showCreateModal = true; }}>
-				<svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+			<button
+				class="btn btn-primary"
+				onclick={() => {
+					resetCreate();
+					showCreateModal = true;
+				}}
+			>
+				<svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+					><path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M12 4v16m8-8H4"
+					/></svg
+				>
 				وصفة جديدة
 			</button>
 		</div>
@@ -351,7 +428,11 @@ import {
 			<button class="tab" class:active={sourceTab === 'all'} onclick={() => (sourceTab = 'all')}>
 				الكل <span class="tab-count">{data.recipes.length}</span>
 			</button>
-			<button class="tab" class:active={sourceTab === 'internal'} onclick={() => (sourceTab = 'internal')}>
+			<button
+				class="tab"
+				class:active={sourceTab === 'internal'}
+				onclick={() => (sourceTab = 'internal')}
+			>
 				يدوية <span class="tab-count">{manualCount}</span>
 			</button>
 			<button class="tab" class:active={sourceTab === 'ai'} onclick={() => (sourceTab = 'ai')}>
@@ -359,8 +440,20 @@ import {
 			</button>
 		</div>
 		<div class="search-wrapper">
-			<svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0" /></svg>
-			<input type="text" bind:value={search} placeholder="ابحث في الوصفات..." class="search-input" />
+			<svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+				><path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					stroke-width="2"
+					d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"
+				/></svg
+			>
+			<input
+				type="text"
+				bind:value={search}
+				placeholder="ابحث في الوصفات..."
+				class="search-input"
+			/>
 		</div>
 	</div>
 
@@ -371,7 +464,19 @@ import {
 	{#if filtered.length === 0}
 		<div class="empty">
 			<div class="empty-icon">
-				<svg width="32" height="32" fill="none" stroke="#3cb96b" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+				<svg
+					width="32"
+					height="32"
+					fill="none"
+					stroke="#3cb96b"
+					stroke-width="1.5"
+					viewBox="0 0 24 24"
+					><path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+					/></svg
+				>
 			</div>
 			{#if search}
 				<h3>لا توجد نتائج</h3>
@@ -395,9 +500,25 @@ import {
 						{#if r.imageUrl}
 							<img class="card-cover-img" src={r.imageUrl} alt="" />
 						{:else}
-							<svg class="card-img-icon" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.2" viewBox="0 0 24 24">
-								<path d="M12 3C7 3 3 7 3 12s4 9 9 9 9-4 9-9-4-9-9-9z" opacity=".15" fill="currentColor"/>
-								<path stroke-linecap="round" stroke-linejoin="round" d="M7 11c0-2.8 2.2-5 5-5s5 2.2 5 5M8.5 16.5l1-3h5l1 3M12 6v2m-4 3h8"/>
+							<svg
+								class="card-img-icon"
+								width="32"
+								height="32"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.2"
+								viewBox="0 0 24 24"
+							>
+								<path
+									d="M12 3C7 3 3 7 3 12s4 9 9 9 9-4 9-9-4-9-9-9z"
+									opacity=".15"
+									fill="currentColor"
+								/>
+								<path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									d="M7 11c0-2.8 2.2-5 5-5s5 2.2 5 5M8.5 16.5l1-3h5l1 3M12 6v2m-4 3h8"
+								/>
 							</svg>
 						{/if}
 						<span class="card-tag" class:tag-ai={isAI}>{isAI ? 'ذكاء اصطناعي' : 'يدوية'}</span>
@@ -434,24 +555,65 @@ import {
 						{/if}
 
 						<div class="card-meta">
-							{#if item.ingredients.length > 0}<span class="meta-chip">{item.ingredients.length} مكون</span>{/if}
+							{#if item.ingredients.length > 0}<span class="meta-chip"
+									>{item.ingredients.length} مكون</span
+								>{/if}
 						</div>
 					</div>
 
 					<!-- Footer -->
 					<div class="card-footer" onclick={(e: MouseEvent) => e.stopPropagation()}>
 						<button class="btn-view" onclick={() => (viewRecipe = item)}>
-							<svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+							<svg width="13" height="13" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+								><path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+								/><path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+								/></svg
+							>
 							عرض التفاصيل
 						</button>
 						<div class="footer-actions">
-							<button class="btn-icon" title="تعديل" onclick={(e: MouseEvent) => { e.stopPropagation(); editingRecipe = item; }}>
-								<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+							<button
+								class="btn-icon"
+								title="تعديل"
+								onclick={(e: MouseEvent) => {
+									e.stopPropagation();
+									editingRecipe = item;
+								}}
+							>
+								<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+									><path
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										stroke-width="2"
+										d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+									/></svg
+								>
 							</button>
 							<form method="POST" action="?/deleteRecipe" use:enhance class="delete-recipe-form">
 								<input type="hidden" name="recipeId" value={r.id} />
-								<button type="submit" class="btn-icon btn-icon-danger" title="حذف" aria-label="حذف الوصفة" onclick={(e: MouseEvent) => e.stopPropagation()}>
-									<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+								<button
+									type="submit"
+									class="btn-icon btn-icon-danger"
+									title="حذف"
+									aria-label="حذف الوصفة"
+									onclick={(e: MouseEvent) => e.stopPropagation()}
+								>
+									<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+										><path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											stroke-width="2"
+											d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+										/></svg
+									>
 								</button>
 							</form>
 						</div>
@@ -476,8 +638,27 @@ import {
 					<h2>{r.nameAr ?? r.name}</h2>
 					{#if r.nameAr}<p class="modal-subtitle">{r.name}</p>{/if}
 				</div>
-				<button type="button" class="modal-close" aria-label="إغلاق" title="إغلاق" onclick={() => (viewRecipe = null)}>
-					<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+				<button
+					type="button"
+					class="modal-close"
+					aria-label="إغلاق"
+					title="إغلاق"
+					onclick={() => (viewRecipe = null)}
+				>
+					<svg
+						width="14"
+						height="14"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+						aria-hidden="true"
+						><path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2.5"
+							d="M6 18L18 6M6 6l12 12"
+						/></svg
+					>
 				</button>
 			</div>
 
@@ -500,20 +681,49 @@ import {
 					<div class="nutrients-card">
 						<div class="nutrients-title">القيم الغذائية الإجمالية</div>
 						<div class="nutrients-grid">
-							<div class="nutrient-item"><div class="nutrient-val" style="color:#f97316">{fmtMacro(nutrients.calories)}</div><div class="nutrient-lbl">سعرة</div></div>
-							<div class="nutrient-item"><div class="nutrient-val" style="color:#3b82f6">{fmtMacro(nutrients.protein)}غ</div><div class="nutrient-lbl">بروتين</div></div>
-							<div class="nutrient-item"><div class="nutrient-val" style="color:#22c55e">{fmtMacro(nutrients.carbs)}غ</div><div class="nutrient-lbl">كربوهيدرات</div></div>
-							<div class="nutrient-item"><div class="nutrient-val" style="color:#ef4444">{fmtMacro(nutrients.fat)}غ</div><div class="nutrient-lbl">دهون</div></div>
-							{#if nutrients.fiber}<div class="nutrient-item"><div class="nutrient-val" style="color:#d97706">{fmtMacro(nutrients.fiber)}غ</div><div class="nutrient-lbl">ألياف</div></div>{/if}
+							<div class="nutrient-item">
+								<div class="nutrient-val" style="color:#f97316">{fmtMacro(nutrients.calories)}</div>
+								<div class="nutrient-lbl">سعرة</div>
+							</div>
+							<div class="nutrient-item">
+								<div class="nutrient-val" style="color:#3b82f6">{fmtMacro(nutrients.protein)}غ</div>
+								<div class="nutrient-lbl">بروتين</div>
+							</div>
+							<div class="nutrient-item">
+								<div class="nutrient-val" style="color:#22c55e">{fmtMacro(nutrients.carbs)}غ</div>
+								<div class="nutrient-lbl">كربوهيدرات</div>
+							</div>
+							<div class="nutrient-item">
+								<div class="nutrient-val" style="color:#ef4444">{fmtMacro(nutrients.fat)}غ</div>
+								<div class="nutrient-lbl">دهون</div>
+							</div>
+							{#if nutrients.fiber}<div class="nutrient-item">
+									<div class="nutrient-val" style="color:#d97706">{fmtMacro(nutrients.fiber)}غ</div>
+									<div class="nutrient-lbl">ألياف</div>
+								</div>{/if}
 						</div>
 						{#if portions > 1}
 							<div class="nutrients-per-serving">
 								<div class="nutrients-per-title">لكل حصة ({portions} حصص)</div>
 								<div class="nutrients-grid nutrients-grid-sm">
-									<div><span style="color:#f97316">{fmtMacro((nutrients.calories ?? 0) / portions)}</span> سعرة</div>
-									<div><span style="color:#3b82f6">{fmtMacro((nutrients.protein ?? 0) / portions)}</span>غ بروتين</div>
-									<div><span style="color:#22c55e">{fmtMacro((nutrients.carbs ?? 0) / portions)}</span>غ كارب</div>
-									<div><span style="color:#ef4444">{fmtMacro((nutrients.fat ?? 0) / portions)}</span>غ دهون</div>
+									<div>
+										<span style="color:#f97316"
+											>{fmtMacro((nutrients.calories ?? 0) / portions)}</span
+										> سعرة
+									</div>
+									<div>
+										<span style="color:#3b82f6"
+											>{fmtMacro((nutrients.protein ?? 0) / portions)}</span
+										>غ بروتين
+									</div>
+									<div>
+										<span style="color:#22c55e">{fmtMacro((nutrients.carbs ?? 0) / portions)}</span
+										>غ كارب
+									</div>
+									<div>
+										<span style="color:#ef4444">{fmtMacro((nutrients.fat ?? 0) / portions)}</span>غ
+										دهون
+									</div>
 								</div>
 							</div>
 						{/if}
@@ -527,7 +737,9 @@ import {
 						<div class="ingredients-list">
 							{#each viewRecipe.ingredients as { ingredient, food }}
 								<div class="ingredient-row">
-									<span class="ingredient-name">{food?.nameAr ?? food?.name ?? ingredient.customText ?? '—'}</span>
+									<span class="ingredient-name"
+										>{food?.nameAr ?? food?.name ?? ingredient.customText ?? '—'}</span
+									>
 									<span class="ingredient-qty">{ingredient.quantity} {ingredient.unit}</span>
 								</div>
 							{/each}
@@ -558,15 +770,42 @@ import {
 					<h2>وصفة جديدة</h2>
 					<p class="modal-subtitle">أضف المكونات من أطعمتك وخطوات التحضير</p>
 				</div>
-				<button type="button" class="modal-close" aria-label="إغلاق" title="إغلاق" onclick={() => (showCreateModal = false)}>
-					<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+				<button
+					type="button"
+					class="modal-close"
+					aria-label="إغلاق"
+					title="إغلاق"
+					onclick={() => (showCreateModal = false)}
+				>
+					<svg
+						width="14"
+						height="14"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+						aria-hidden="true"
+						><path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2.5"
+							d="M6 18L18 6M6 6l12 12"
+						/></svg
+					>
 				</button>
 			</div>
 			<form
 				method="POST"
 				action="?/createRecipe"
 				enctype="multipart/form-data"
-				use:enhance={() => { createLoading = true; return async ({ update }) => { await update(); createLoading = false; showCreateModal = false; resetCreate(); }; }}
+				use:enhance={() => {
+					createLoading = true;
+					return async ({ update }) => {
+						await update();
+						createLoading = false;
+						showCreateModal = false;
+						resetCreate();
+					};
+				}}
 			>
 				<input type="hidden" name="ingredients" value={JSON.stringify(createIngredients)} />
 				<div class="modal-body">
@@ -574,25 +813,62 @@ import {
 						<div class="recipe-photo-row">
 							<!-- svelte-ignore a11y_click_events_have_key_events -->
 							<!-- svelte-ignore a11y_no_static_element_interactions -->
-							<button type="button" class="recipe-photo-thumb" onclick={() => createRecipeImageInput?.click()}>
+							<button
+								type="button"
+								class="recipe-photo-thumb"
+								onclick={() => createRecipeImageInput?.click()}
+							>
 								{#if createRecipeImagePreview}
 									<img src={createRecipeImagePreview} alt="" />
 								{:else}
-									<svg width="24" height="24" fill="none" stroke="#d1d5db" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+									<svg
+										width="24"
+										height="24"
+										fill="none"
+										stroke="#d1d5db"
+										stroke-width="1.5"
+										viewBox="0 0 24 24"
+										><path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+										/></svg
+									>
 								{/if}
 							</button>
 							<div class="recipe-photo-meta">
 								<p class="recipe-photo-heading">صورة الوصفة</p>
-								<p class="recipe-photo-hint-line">اختياري · PNG أو JPG أو WEBP أو GIF · حتى 5 ميغابايت</p>
+								<p class="recipe-photo-hint-line">
+									اختياري · PNG أو JPG أو WEBP أو GIF · حتى 5 ميغابايت
+								</p>
 								<div class="recipe-photo-actions">
-									<button type="button" class="recipe-photo-upload-link" onclick={() => createRecipeImageInput?.click()}>
+									<button
+										type="button"
+										class="recipe-photo-upload-link"
+										onclick={() => createRecipeImageInput?.click()}
+									>
 										{createRecipeImagePreview ? 'تغيير الصورة' : 'رفع صورة'}
 									</button>
 									{#if createRecipeImagePreview}
-										<button type="button" class="recipe-photo-clear" onclick={(e) => { e.stopPropagation(); createRecipeImagePreview = null; if (createRecipeImageInput) createRecipeImageInput.value = ''; }}>إزالة الصورة</button>
+										<button
+											type="button"
+											class="recipe-photo-clear"
+											onclick={(e) => {
+												e.stopPropagation();
+												createRecipeImagePreview = null;
+												if (createRecipeImageInput) createRecipeImageInput.value = '';
+											}}>إزالة الصورة</button
+										>
 									{/if}
 								</div>
-								<input bind:this={createRecipeImageInput} type="file" name="image" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden-file-input" onchange={handleCreateRecipeImage} />
+								<input
+									bind:this={createRecipeImageInput}
+									type="file"
+									name="image"
+									accept="image/jpeg,image/png,image/webp,image/gif"
+									class="hidden-file-input"
+									onchange={handleCreateRecipeImage}
+								/>
 							</div>
 						</div>
 					</div>
@@ -601,27 +877,71 @@ import {
 					<div class="field-row">
 						<div class="field">
 							<label for="nameAr">الاسم بالعربي <span class="required">*</span></label>
-							<input id="nameAr" name="nameAr" type="text" required class="input" placeholder="مثال: شوربة العدس" />
+							<input
+								id="nameAr"
+								name="nameAr"
+								type="text"
+								required
+								class="input"
+								placeholder="مثال: شوربة العدس"
+							/>
 						</div>
 						<div class="field">
-							<label for="name">الاسم بالإنجليزي <span class="optional-label">(اختياري)</span></label>
-							<input id="name" name="name" type="text" class="input" placeholder="Lentil Soup" dir="ltr" />
+							<label for="name"
+								>الاسم بالإنجليزي <span class="optional-label">(اختياري)</span></label
+							>
+							<input
+								id="name"
+								name="name"
+								type="text"
+								class="input"
+								placeholder="Lentil Soup"
+								dir="ltr"
+							/>
 						</div>
 					</div>
 					<div class="field field-portions">
 						<label for="portions">عدد الحصص</label>
-						<input id="portions" name="portions" type="number" value="1" min="1" class="input input-portions" dir="ltr" inputmode="numeric" />
+						<input
+							id="portions"
+							name="portions"
+							type="number"
+							value="1"
+							min="1"
+							class="input input-portions"
+							dir="ltr"
+							inputmode="numeric"
+						/>
 					</div>
 					<div class="field">
 						<label for="yield">الناتج <span class="optional-label">(اختياري)</span></label>
-						<input id="yield" name="yield" type="text" class="input" placeholder="مثال: 4 أكواب، 12 قطعة..." />
+						<input
+							id="yield"
+							name="yield"
+							type="text"
+							class="input"
+							placeholder="مثال: 4 أكواب، 12 قطعة..."
+						/>
 					</div>
 
 					<div class="section-label">المكونات</div>
 					<!-- Ingredient search -->
 					<div style="position:relative;">
 						<div class="ing-search-wrap">
-							<svg width="14" height="14" fill="none" stroke="#94a3b8" viewBox="0 0 24 24" style="flex-shrink:0"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0" /></svg>
+							<svg
+								width="14"
+								height="14"
+								fill="none"
+								stroke="#94a3b8"
+								viewBox="0 0 24 24"
+								style="flex-shrink:0"
+								><path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"
+								/></svg
+							>
 							<input
 								type="text"
 								bind:value={createIngSearch}
@@ -630,7 +950,8 @@ import {
 								class="ing-search-input"
 							/>
 							{#if createIngLoading}
-								<span class="spinner spinner-dark" style="width:14px;height:14px;flex-shrink:0;"></span>
+								<span class="spinner spinner-dark" style="width:14px;height:14px;flex-shrink:0;"
+								></span>
 							{/if}
 						</div>
 						{#if createIngResults.length > 0}
@@ -653,13 +974,40 @@ import {
 								<div class="ing-row">
 									<div class="ing-row-head">
 										<span class="ing-name">{ing.nameAr ?? ing.name}</span>
-										<button type="button" class="ing-remove" aria-label="حذف المكون" title="حذف المكون" onclick={() => removeCreateIng(i)}>
-											<svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+										<button
+											type="button"
+											class="ing-remove"
+											aria-label="حذف المكون"
+											title="حذف المكون"
+											onclick={() => removeCreateIng(i)}
+										>
+											<svg
+												width="12"
+												height="12"
+												fill="none"
+												stroke="currentColor"
+												viewBox="0 0 24 24"
+												aria-hidden="true"
+												><path
+													stroke-linecap="round"
+													stroke-linejoin="round"
+													stroke-width="2.5"
+													d="M6 18L18 6M6 6l12 12"
+												/></svg
+											>
 										</button>
 									</div>
 									<div class="ing-row-meta">
 										<div class="ing-qty-wrap">
-											<input type="number" bind:value={ing.quantity} min="0" step="any" class="ing-qty-input" dir="ltr" inputmode="decimal" />
+											<input
+												type="number"
+												bind:value={ing.quantity}
+												min="0"
+												step="any"
+												class="ing-qty-input"
+												dir="ltr"
+												inputmode="decimal"
+											/>
 											<span class="ing-unit">{ing.unit}</span>
 										</div>
 										<div class="ing-macros">
@@ -668,15 +1016,27 @@ import {
 												<span class="ing-macro-pill-lbl">سعرة حرارية</span>
 											</span>
 											<span class="ing-macro-pill ing-macro-prot ing-macro-pill-stack">
-												<span class="ing-macro-pill-val">{Math.round(ing.protein * f)}<span class="ing-macro-pill-unit"> غ</span></span>
+												<span class="ing-macro-pill-val"
+													>{Math.round(ing.protein * f)}<span class="ing-macro-pill-unit">
+														غ</span
+													></span
+												>
 												<span class="ing-macro-pill-lbl">بروتين</span>
 											</span>
 											<span class="ing-macro-pill ing-macro-carb ing-macro-pill-stack">
-												<span class="ing-macro-pill-val">{Math.round(ing.carbs * f)}<span class="ing-macro-pill-unit"> غ</span></span>
+												<span class="ing-macro-pill-val"
+													>{Math.round(ing.carbs * f)}<span class="ing-macro-pill-unit">
+														غ</span
+													></span
+												>
 												<span class="ing-macro-pill-lbl">كربوهيدرات</span>
 											</span>
 											<span class="ing-macro-pill ing-macro-fat ing-macro-pill-stack">
-												<span class="ing-macro-pill-val">{Math.round(ing.fat * f)}<span class="ing-macro-pill-unit"> غ</span></span>
+												<span class="ing-macro-pill-val"
+													>{Math.round(ing.fat * f)}<span class="ing-macro-pill-unit">
+														غ</span
+													></span
+												>
 												<span class="ing-macro-pill-lbl">دهون</span>
 											</span>
 										</div>
@@ -693,15 +1053,21 @@ import {
 											<span class="ing-macro-pill-lbl">سعرة حرارية</span>
 										</span>
 										<span class="ing-macro-pill ing-macro-prot ing-macro-pill-stack">
-											<span class="ing-macro-pill-val">{t.pro}<span class="ing-macro-pill-unit"> غ</span></span>
+											<span class="ing-macro-pill-val"
+												>{t.pro}<span class="ing-macro-pill-unit"> غ</span></span
+											>
 											<span class="ing-macro-pill-lbl">بروتين</span>
 										</span>
 										<span class="ing-macro-pill ing-macro-carb ing-macro-pill-stack">
-											<span class="ing-macro-pill-val">{t.carb}<span class="ing-macro-pill-unit"> غ</span></span>
+											<span class="ing-macro-pill-val"
+												>{t.carb}<span class="ing-macro-pill-unit"> غ</span></span
+											>
 											<span class="ing-macro-pill-lbl">كربوهيدرات</span>
 										</span>
 										<span class="ing-macro-pill ing-macro-fat ing-macro-pill-stack">
-											<span class="ing-macro-pill-val">{t.fat}<span class="ing-macro-pill-unit"> غ</span></span>
+											<span class="ing-macro-pill-val"
+												>{t.fat}<span class="ing-macro-pill-unit"> غ</span></span
+											>
 											<span class="ing-macro-pill-lbl">دهون</span>
 										</span>
 									</div>
@@ -713,10 +1079,21 @@ import {
 					{/if}
 
 					<div class="section-label">خطوات التحضير</div>
-					<div class="field"><label for="steps">الخطوات <span class="required">*</span></label><textarea id="steps" name="steps" rows="4" class="input" placeholder="اكتب خطوات تحضير الوصفة..." required></textarea></div>
+					<div class="field">
+						<label for="steps">الخطوات <span class="required">*</span></label><textarea
+							id="steps"
+							name="steps"
+							rows="4"
+							class="input"
+							placeholder="اكتب خطوات تحضير الوصفة..."
+							required
+						></textarea>
+					</div>
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-ghost" onclick={() => (showCreateModal = false)}>إلغاء</button>
+					<button type="button" class="btn btn-ghost" onclick={() => (showCreateModal = false)}
+						>إلغاء</button
+					>
 					<button type="submit" class="btn btn-primary" disabled={createLoading}>
 						{#if createLoading}<span class="spinner"></span>جاري الحفظ...{:else}حفظ الوصفة{/if}
 					</button>
@@ -736,7 +1113,10 @@ import {
 				<div style="display:flex; align-items:center; gap:12px;">
 					<div class="ai-icon-wrap">
 						<svg width="20" height="20" fill="none" viewBox="0 0 24 24">
-							<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" fill="#7c5cbf"/>
+							<path
+								d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"
+								fill="#7c5cbf"
+							/>
 						</svg>
 					</div>
 					<div>
@@ -744,8 +1124,27 @@ import {
 						<p class="modal-subtitle">سيتم إنشاء المكونات والخطوات والقيم الغذائية تلقائياً</p>
 					</div>
 				</div>
-				<button type="button" class="modal-close" aria-label="إغلاق" title="إغلاق" onclick={() => (showAIModal = false)}>
-					<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+				<button
+					type="button"
+					class="modal-close"
+					aria-label="إغلاق"
+					title="إغلاق"
+					onclick={() => (showAIModal = false)}
+				>
+					<svg
+						width="14"
+						height="14"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+						aria-hidden="true"
+						><path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2.5"
+							d="M6 18L18 6M6 6l12 12"
+						/></svg
+					>
 				</button>
 			</div>
 			<div class="modal-body">
@@ -754,18 +1153,39 @@ import {
 				<!-- Description -->
 				<div class="field">
 					<label for="aiDesc">ماذا تريد أن تطبخ؟ <span class="required">*</span></label>
-					<textarea id="aiDesc" bind:value={aiDescription} class="input" rows="2" placeholder="مثال: كبسة دجاج صحية، سلطة سيزر بالبروتين العالي، وجبة مناسبة لمرضى السكري..."></textarea>
+					<textarea
+						id="aiDesc"
+						bind:value={aiDescription}
+						class="input"
+						rows="2"
+						placeholder="مثال: كبسة دجاج صحية، سلطة سيزر بالبروتين العالي، وجبة مناسبة لمرضى السكري..."
+					></textarea>
 				</div>
 
 				<!-- Portions first, then kcal (RTL reading order); numbers stay LTR inside inputs -->
 				<div class="field-row field-row-ai-numeric">
 					<div class="field">
 						<label for="aiPort">عدد الحصص</label>
-						<input id="aiPort" bind:value={aiPortions} type="number" min="1" class="input input-ai-number" inputmode="numeric" />
+						<input
+							id="aiPort"
+							bind:value={aiPortions}
+							type="number"
+							min="1"
+							class="input input-ai-number"
+							inputmode="numeric"
+						/>
 					</div>
 					<div class="field">
 						<label for="aiCals">السعرات/حصة <span class="optional-label">(اختياري)</span></label>
-						<input id="aiCals" bind:value={aiCaloriesPerServing} type="number" min="100" class="input input-ai-number" placeholder="مثال: 500" inputmode="numeric" />
+						<input
+							id="aiCals"
+							bind:value={aiCaloriesPerServing}
+							type="number"
+							min="100"
+							class="input input-ai-number"
+							placeholder="مثال: 500"
+							inputmode="numeric"
+						/>
 					</div>
 				</div>
 
@@ -773,24 +1193,68 @@ import {
 				<div class="field">
 					<span id="ai-macro-presets-label" class="field-group-heading">نسبة المغذيات الكبرى</span>
 					<div class="preset-tabs" role="group" aria-labelledby="ai-macro-presets-label">
-						<button type="button" class="preset-tab" class:active={aiMacroPreset === 'balanced'} onclick={() => selectMacroPreset('balanced')}>متوازن</button>
-						<button type="button" class="preset-tab" class:active={aiMacroPreset === 'highProtein'} onclick={() => selectMacroPreset('highProtein')}>بروتين عالي</button>
-						<button type="button" class="preset-tab" class:active={aiMacroPreset === 'lowCarb'} onclick={() => selectMacroPreset('lowCarb')}>كربوهيدرات منخفضة</button>
-						<button type="button" class="preset-tab" class:active={aiMacroPreset === 'custom'} onclick={() => selectMacroPreset('custom')}>مخصص</button>
+						<button
+							type="button"
+							class="preset-tab"
+							class:active={aiMacroPreset === 'balanced'}
+							onclick={() => selectMacroPreset('balanced')}>متوازن</button
+						>
+						<button
+							type="button"
+							class="preset-tab"
+							class:active={aiMacroPreset === 'highProtein'}
+							onclick={() => selectMacroPreset('highProtein')}>بروتين عالي</button
+						>
+						<button
+							type="button"
+							class="preset-tab"
+							class:active={aiMacroPreset === 'lowCarb'}
+							onclick={() => selectMacroPreset('lowCarb')}>كربوهيدرات منخفضة</button
+						>
+						<button
+							type="button"
+							class="preset-tab"
+							class:active={aiMacroPreset === 'custom'}
+							onclick={() => selectMacroPreset('custom')}>مخصص</button
+						>
 					</div>
 					{#if aiMacroPreset === 'custom'}
 						<div class="macro-inputs macro-inputs-ai">
 							<div class="macro-input-cell">
 								<label for="aiCarbs">% الكربوهيدرات</label>
-								<input id="aiCarbs" type="number" bind:value={aiCarbsPct} min="0" max="100" class="input input-sm input-ai-number" inputmode="numeric" />
+								<input
+									id="aiCarbs"
+									type="number"
+									bind:value={aiCarbsPct}
+									min="0"
+									max="100"
+									class="input input-sm input-ai-number"
+									inputmode="numeric"
+								/>
 							</div>
 							<div class="macro-input-cell">
 								<label for="aiProt">% البروتين</label>
-								<input id="aiProt" type="number" bind:value={aiProteinPct} min="0" max="100" class="input input-sm input-ai-number" inputmode="numeric" />
+								<input
+									id="aiProt"
+									type="number"
+									bind:value={aiProteinPct}
+									min="0"
+									max="100"
+									class="input input-sm input-ai-number"
+									inputmode="numeric"
+								/>
 							</div>
 							<div class="macro-input-cell">
 								<label for="aiFats">% الدهون</label>
-								<input id="aiFats" type="number" bind:value={aiFatPct} min="0" max="100" class="input input-sm input-ai-number" inputmode="numeric" />
+								<input
+									id="aiFats"
+									type="number"
+									bind:value={aiFatPct}
+									min="0"
+									max="100"
+									class="input input-sm input-ai-number"
+									inputmode="numeric"
+								/>
 							</div>
 						</div>
 					{:else}
@@ -801,10 +1265,11 @@ import {
 						</div>
 					{/if}
 				</div>
-
 			</div>
 			<div class="modal-footer">
-				<button class="btn btn-ghost" onclick={() => (showAIModal = false)} disabled={aiLoading}>إلغاء</button>
+				<button class="btn btn-ghost" onclick={() => (showAIModal = false)} disabled={aiLoading}
+					>إلغاء</button
+				>
 				<button
 					class="btn btn-ai"
 					disabled={aiLoading || !aiDescription.trim()}
@@ -832,7 +1297,12 @@ import {
 					}}
 				>
 					{#if aiLoading}<span class="spinner"></span>جاري التوليد...{:else}
-						<svg width="15" height="15" fill="none" viewBox="0 0 24 24"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" fill="currentColor"/></svg>
+						<svg width="15" height="15" fill="none" viewBox="0 0 24 24"
+							><path
+								d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"
+								fill="currentColor"
+							/></svg
+						>
 						توليد الوصفة
 					{/if}
 				</button>
@@ -852,15 +1322,41 @@ import {
 					<h2>تعديل الوصفة</h2>
 					<p class="modal-subtitle">نفس حقول «وصفة جديدة» مع عرض القيم الحالية للتعديل</p>
 				</div>
-				<button type="button" class="modal-close" aria-label="إغلاق" title="إغلاق" onclick={() => (editingRecipe = null)}>
-					<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+				<button
+					type="button"
+					class="modal-close"
+					aria-label="إغلاق"
+					title="إغلاق"
+					onclick={() => (editingRecipe = null)}
+				>
+					<svg
+						width="14"
+						height="14"
+						fill="none"
+						stroke="currentColor"
+						viewBox="0 0 24 24"
+						aria-hidden="true"
+						><path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2.5"
+							d="M6 18L18 6M6 6l12 12"
+						/></svg
+					>
 				</button>
 			</div>
 			<form
 				method="POST"
 				action="?/editRecipe"
 				enctype="multipart/form-data"
-				use:enhance={() => { editLoading = true; return async ({ update }) => { await update(); editLoading = false; editingRecipe = null; }; }}
+				use:enhance={() => {
+					editLoading = true;
+					return async ({ update }) => {
+						await update();
+						editLoading = false;
+						editingRecipe = null;
+					};
+				}}
 			>
 				<input type="hidden" name="id" value={editingRecipe.recipe.id} />
 				<input type="hidden" name="ingredients" value={editIngredientsJson} />
@@ -869,27 +1365,66 @@ import {
 						<div class="recipe-photo-row">
 							<!-- svelte-ignore a11y_click_events_have_key_events -->
 							<!-- svelte-ignore a11y_no_static_element_interactions -->
-							<button type="button" class="recipe-photo-thumb" onclick={() => editRecipeImageInput?.click()}>
+							<button
+								type="button"
+								class="recipe-photo-thumb"
+								onclick={() => editRecipeImageInput?.click()}
+							>
 								{#if editRecipeImagePreview}
 									<img src={editRecipeImagePreview} alt="" />
 								{:else if editingRecipe.recipe.imageUrl}
 									<img src={editingRecipe.recipe.imageUrl} alt="" />
 								{:else}
-									<svg width="24" height="24" fill="none" stroke="#d1d5db" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+									<svg
+										width="24"
+										height="24"
+										fill="none"
+										stroke="#d1d5db"
+										stroke-width="1.5"
+										viewBox="0 0 24 24"
+										><path
+											stroke-linecap="round"
+											stroke-linejoin="round"
+											d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+										/></svg
+									>
 								{/if}
 							</button>
 							<div class="recipe-photo-meta">
 								<p class="recipe-photo-heading">صورة الوصفة</p>
-								<p class="recipe-photo-hint-line">اختياري · PNG أو JPG أو WEBP أو GIF · حتى 5 ميغابايت</p>
+								<p class="recipe-photo-hint-line">
+									اختياري · PNG أو JPG أو WEBP أو GIF · حتى 5 ميغابايت
+								</p>
 								<div class="recipe-photo-actions">
-									<button type="button" class="recipe-photo-upload-link" onclick={() => editRecipeImageInput?.click()}>
-										{editRecipeImagePreview || editingRecipe.recipe.imageUrl ? 'تغيير الصورة' : 'رفع صورة'}
+									<button
+										type="button"
+										class="recipe-photo-upload-link"
+										onclick={() => editRecipeImageInput?.click()}
+									>
+										{editRecipeImagePreview || editingRecipe.recipe.imageUrl
+											? 'تغيير الصورة'
+											: 'رفع صورة'}
 									</button>
 									{#if editRecipeImagePreview}
-										<button type="button" class="recipe-photo-clear" onclick={(e) => { e.stopPropagation(); editRecipeImagePreview = null; if (editRecipeImageInput) editRecipeImageInput.value = ''; }}>إلغاء الصورة الجديدة</button>
+										<button
+											type="button"
+											class="recipe-photo-clear"
+											onclick={(e) => {
+												e.stopPropagation();
+												editRecipeImagePreview = null;
+												if (editRecipeImageInput) editRecipeImageInput.value = '';
+											}}>إلغاء الصورة الجديدة</button
+										>
 									{/if}
 								</div>
-								<input bind:this={editRecipeImageInput} type="file" name="image" accept="image/jpeg,image/png,image/webp,image/gif" class="hidden-file-input" onchange={handleEditRecipeImage} />
+								<input
+									bind:this={editRecipeImageInput}
+									type="file"
+									name="image"
+									accept="image/jpeg,image/png,image/webp,image/gif"
+									class="hidden-file-input"
+									onchange={handleEditRecipeImage}
+								/>
 							</div>
 						</div>
 					</div>
@@ -898,26 +1433,73 @@ import {
 					<div class="field-row">
 						<div class="field">
 							<label for="edit-nameAr">الاسم بالعربي <span class="required">*</span></label>
-							<input id="edit-nameAr" name="nameAr" type="text" required class="input" bind:value={editFormNameAr} placeholder="مثال: شوربة العدس" />
+							<input
+								id="edit-nameAr"
+								name="nameAr"
+								type="text"
+								required
+								class="input"
+								bind:value={editFormNameAr}
+								placeholder="مثال: شوربة العدس"
+							/>
 						</div>
 						<div class="field">
-							<label for="edit-name">الاسم بالإنجليزي <span class="optional-label">(اختياري)</span></label>
-							<input id="edit-name" name="name" type="text" class="input" bind:value={editFormName} placeholder="Lentil Soup" dir="ltr" />
+							<label for="edit-name"
+								>الاسم بالإنجليزي <span class="optional-label">(اختياري)</span></label
+							>
+							<input
+								id="edit-name"
+								name="name"
+								type="text"
+								class="input"
+								bind:value={editFormName}
+								placeholder="Lentil Soup"
+								dir="ltr"
+							/>
 						</div>
 					</div>
 					<div class="field field-portions">
 						<label for="edit-portions">عدد الحصص</label>
-						<input id="edit-portions" name="portions" type="number" bind:value={editFormPortions} min="1" class="input input-portions" dir="ltr" inputmode="numeric" />
+						<input
+							id="edit-portions"
+							name="portions"
+							type="number"
+							bind:value={editFormPortions}
+							min="1"
+							class="input input-portions"
+							dir="ltr"
+							inputmode="numeric"
+						/>
 					</div>
 					<div class="field">
 						<label for="edit-yield">الناتج <span class="optional-label">(اختياري)</span></label>
-						<input id="edit-yield" name="yield" type="text" class="input" bind:value={editYield} placeholder="مثال: 4 أكواب، 12 قطعة..." />
+						<input
+							id="edit-yield"
+							name="yield"
+							type="text"
+							class="input"
+							bind:value={editYield}
+							placeholder="مثال: 4 أكواب، 12 قطعة..."
+						/>
 					</div>
 
 					<div class="section-label">المكونات</div>
 					<div style="position:relative;">
 						<div class="ing-search-wrap">
-							<svg width="14" height="14" fill="none" stroke="#94a3b8" viewBox="0 0 24 24" style="flex-shrink:0"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0" /></svg>
+							<svg
+								width="14"
+								height="14"
+								fill="none"
+								stroke="#94a3b8"
+								viewBox="0 0 24 24"
+								style="flex-shrink:0"
+								><path
+									stroke-linecap="round"
+									stroke-linejoin="round"
+									stroke-width="2"
+									d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"
+								/></svg
+							>
 							<input
 								type="text"
 								bind:value={editIngSearch}
@@ -926,7 +1508,8 @@ import {
 								class="ing-search-input"
 							/>
 							{#if editIngLoading}
-								<span class="spinner spinner-dark" style="width:14px;height:14px;flex-shrink:0;"></span>
+								<span class="spinner spinner-dark" style="width:14px;height:14px;flex-shrink:0;"
+								></span>
 							{/if}
 						</div>
 						{#if editIngResults.length > 0}
@@ -950,13 +1533,40 @@ import {
 									<div class="ing-row">
 										<div class="ing-row-head">
 											<span class="ing-name">{ing.nameAr ?? ing.name}</span>
-											<button type="button" class="ing-remove" aria-label="حذف المكون" title="حذف المكون" onclick={() => removeEditLine(i)}>
-												<svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+											<button
+												type="button"
+												class="ing-remove"
+												aria-label="حذف المكون"
+												title="حذف المكون"
+												onclick={() => removeEditLine(i)}
+											>
+												<svg
+													width="12"
+													height="12"
+													fill="none"
+													stroke="currentColor"
+													viewBox="0 0 24 24"
+													aria-hidden="true"
+													><path
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														stroke-width="2.5"
+														d="M6 18L18 6M6 6l12 12"
+													/></svg
+												>
 											</button>
 										</div>
 										<div class="ing-row-meta">
 											<div class="ing-qty-wrap">
-												<input type="number" bind:value={ing.quantity} min="0" step="any" class="ing-qty-input" dir="ltr" inputmode="decimal" />
+												<input
+													type="number"
+													bind:value={ing.quantity}
+													min="0"
+													step="any"
+													class="ing-qty-input"
+													dir="ltr"
+													inputmode="decimal"
+												/>
 												<span class="ing-unit">{ing.unit}</span>
 											</div>
 											<div class="ing-macros">
@@ -965,15 +1575,27 @@ import {
 													<span class="ing-macro-pill-lbl">سعرة حرارية</span>
 												</span>
 												<span class="ing-macro-pill ing-macro-prot ing-macro-pill-stack">
-													<span class="ing-macro-pill-val">{Math.round(ing.protein * f)}<span class="ing-macro-pill-unit"> غ</span></span>
+													<span class="ing-macro-pill-val"
+														>{Math.round(ing.protein * f)}<span class="ing-macro-pill-unit">
+															غ</span
+														></span
+													>
 													<span class="ing-macro-pill-lbl">بروتين</span>
 												</span>
 												<span class="ing-macro-pill ing-macro-carb ing-macro-pill-stack">
-													<span class="ing-macro-pill-val">{Math.round(ing.carbs * f)}<span class="ing-macro-pill-unit"> غ</span></span>
+													<span class="ing-macro-pill-val"
+														>{Math.round(ing.carbs * f)}<span class="ing-macro-pill-unit">
+															غ</span
+														></span
+													>
 													<span class="ing-macro-pill-lbl">كربوهيدرات</span>
 												</span>
 												<span class="ing-macro-pill ing-macro-fat ing-macro-pill-stack">
-													<span class="ing-macro-pill-val">{Math.round(ing.fat * f)}<span class="ing-macro-pill-unit"> غ</span></span>
+													<span class="ing-macro-pill-val"
+														>{Math.round(ing.fat * f)}<span class="ing-macro-pill-unit">
+															غ</span
+														></span
+													>
 													<span class="ing-macro-pill-lbl">دهون</span>
 												</span>
 											</div>
@@ -984,13 +1606,40 @@ import {
 										<div class="ing-row-head">
 											<span class="ing-name">{line.customText}</span>
 											<span class="optional-label" style="font-size:11px;">نص مخصص</span>
-											<button type="button" class="ing-remove" aria-label="حذف المكون" title="حذف المكون" onclick={() => removeEditLine(i)}>
-												<svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+											<button
+												type="button"
+												class="ing-remove"
+												aria-label="حذف المكون"
+												title="حذف المكون"
+												onclick={() => removeEditLine(i)}
+											>
+												<svg
+													width="12"
+													height="12"
+													fill="none"
+													stroke="currentColor"
+													viewBox="0 0 24 24"
+													aria-hidden="true"
+													><path
+														stroke-linecap="round"
+														stroke-linejoin="round"
+														stroke-width="2.5"
+														d="M6 18L18 6M6 6l12 12"
+													/></svg
+												>
 											</button>
 										</div>
 										<div class="ing-row-meta">
 											<div class="ing-qty-wrap">
-												<input type="number" bind:value={line.quantity} min="0" step="any" class="ing-qty-input" dir="ltr" inputmode="decimal" />
+												<input
+													type="number"
+													bind:value={line.quantity}
+													min="0"
+													step="any"
+													class="ing-qty-input"
+													dir="ltr"
+													inputmode="decimal"
+												/>
 												<span class="ing-unit">{line.unit}</span>
 											</div>
 										</div>
@@ -1007,15 +1656,21 @@ import {
 											<span class="ing-macro-pill-lbl">سعرة حرارية</span>
 										</span>
 										<span class="ing-macro-pill ing-macro-prot ing-macro-pill-stack">
-											<span class="ing-macro-pill-val">{t.pro}<span class="ing-macro-pill-unit"> غ</span></span>
+											<span class="ing-macro-pill-val"
+												>{t.pro}<span class="ing-macro-pill-unit"> غ</span></span
+											>
 											<span class="ing-macro-pill-lbl">بروتين</span>
 										</span>
 										<span class="ing-macro-pill ing-macro-carb ing-macro-pill-stack">
-											<span class="ing-macro-pill-val">{t.carb}<span class="ing-macro-pill-unit"> غ</span></span>
+											<span class="ing-macro-pill-val"
+												>{t.carb}<span class="ing-macro-pill-unit"> غ</span></span
+											>
 											<span class="ing-macro-pill-lbl">كربوهيدرات</span>
 										</span>
 										<span class="ing-macro-pill ing-macro-fat ing-macro-pill-stack">
-											<span class="ing-macro-pill-val">{t.fat}<span class="ing-macro-pill-unit"> غ</span></span>
+											<span class="ing-macro-pill-val"
+												>{t.fat}<span class="ing-macro-pill-unit"> غ</span></span
+											>
 											<span class="ing-macro-pill-lbl">دهون</span>
 										</span>
 									</div>
@@ -1029,11 +1684,21 @@ import {
 					<div class="section-label">خطوات التحضير</div>
 					<div class="field">
 						<label for="edit-steps">الخطوات <span class="required">*</span></label>
-						<textarea id="edit-steps" name="steps" rows="4" required class="input" bind:value={editStepsBody} placeholder="اكتب خطوات تحضير الوصفة..."></textarea>
+						<textarea
+							id="edit-steps"
+							name="steps"
+							rows="4"
+							required
+							class="input"
+							bind:value={editStepsBody}
+							placeholder="اكتب خطوات تحضير الوصفة..."
+						></textarea>
 					</div>
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-ghost" onclick={() => (editingRecipe = null)}>إلغاء</button>
+					<button type="button" class="btn btn-ghost" onclick={() => (editingRecipe = null)}
+						>إلغاء</button
+					>
 					<button type="submit" class="btn btn-primary" disabled={editLoading}>
 						{#if editLoading}<span class="spinner"></span>جاري الحفظ...{:else}حفظ الوصفة{/if}
 					</button>
@@ -1248,7 +1913,12 @@ import {
 		transform: scale(0.98);
 	}
 	.btn-primary {
-		background: linear-gradient(165deg, #34b16f 0%, var(--rp-accent) 45%, var(--rp-accent-deep) 100%);
+		background: linear-gradient(
+			165deg,
+			#34b16f 0%,
+			var(--rp-accent) 45%,
+			var(--rp-accent-deep) 100%
+		);
 		color: #fff;
 		box-shadow: 0 4px 16px rgba(42, 157, 98, 0.28);
 	}
@@ -1690,7 +2360,9 @@ import {
 		-webkit-appearance: none;
 		margin: 0;
 	}
-	.modal-lg { max-width: 600px; }
+	.modal-lg {
+		max-width: 600px;
+	}
 	/* Create / edit recipe: one scrollbar on the card (no nested body scroll) */
 	.modal-recipe-form {
 		max-width: 626px;
@@ -1811,15 +2483,40 @@ import {
 		background: #ffffff;
 		background-color: #ffffff;
 	}
-	.modal:not(.modal-recipe-form) .modal-footer .btn { flex: 1; justify-content: center; }
+	.modal:not(.modal-recipe-form) .modal-footer .btn {
+		flex: 1;
+		justify-content: center;
+	}
 
 	/* Form */
-	.field { display: flex; flex-direction: column; gap: 6px; }
-	.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-	.field label { font-size: 12px; font-weight: 600; color: #475569; }
-	.field .field-group-heading { font-size: 12px; font-weight: 600; color: #475569; }
-	.required { color: #ef4444; }
-	.optional-label { font-size: 10px; color: #94a3b8; font-weight: 400; }
+	.field {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+	.field-row {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 12px;
+	}
+	.field label {
+		font-size: 12px;
+		font-weight: 600;
+		color: #475569;
+	}
+	.field .field-group-heading {
+		font-size: 12px;
+		font-weight: 600;
+		color: #475569;
+	}
+	.required {
+		color: #ef4444;
+	}
+	.optional-label {
+		font-size: 10px;
+		color: #94a3b8;
+		font-weight: 400;
+	}
 	/*
 	 * @tailwindcss/forms zeroes default borders — use explicit borders + appearance reset
 	 * so text/number fields match and stay visible on white modal surfaces.
@@ -1861,7 +2558,11 @@ import {
 			0 0 0 4px rgba(42, 157, 98, 0.14);
 		background: #ffffff;
 	}
-	.input-sm { padding: 8px 10px; font-size: 13px; min-height: 40px; }
+	.input-sm {
+		padding: 8px 10px;
+		font-size: 13px;
+		min-height: 40px;
+	}
 	textarea.input {
 		resize: vertical;
 		min-height: 100px;
@@ -1921,9 +2622,23 @@ import {
 			0 0 0 4px rgba(42, 157, 98, 0.14) !important;
 		outline: none !important;
 	}
-	.section-label { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .6px; padding-bottom: 6px; border-bottom: 1px solid #f1f5f9; }
-	.recipe-photo-block { margin: 0; }
-	.recipe-photo-row { display: flex; align-items: center; gap: 16px; }
+	.section-label {
+		font-size: 11px;
+		font-weight: 700;
+		color: #94a3b8;
+		text-transform: uppercase;
+		letter-spacing: 0.6px;
+		padding-bottom: 6px;
+		border-bottom: 1px solid #f1f5f9;
+	}
+	.recipe-photo-block {
+		margin: 0;
+	}
+	.recipe-photo-row {
+		display: flex;
+		align-items: center;
+		gap: 16px;
+	}
 	.recipe-photo-thumb {
 		width: 80px;
 		height: 80px;
@@ -1937,14 +2652,42 @@ import {
 		justify-content: center;
 		padding: 0;
 		overflow: hidden;
-		transition: border-color 0.15s ease, background 0.15s ease;
+		transition:
+			border-color 0.15s ease,
+			background 0.15s ease;
 	}
-	.recipe-photo-thumb:hover { border-color: #3cb96b; background: #edf9f2; }
-	.recipe-photo-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
-	.recipe-photo-meta { flex: 1; min-width: 0; }
-	.recipe-photo-heading { font-size: 12px; font-weight: 600; color: #059669; margin: 0 0 2px; }
-	.recipe-photo-hint-line { font-size: 11px; color: #9ca3af; margin: 0 0 10px; line-height: 1.45; }
-	.recipe-photo-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+	.recipe-photo-thumb:hover {
+		border-color: #3cb96b;
+		background: #edf9f2;
+	}
+	.recipe-photo-thumb img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		border-radius: 10px;
+	}
+	.recipe-photo-meta {
+		flex: 1;
+		min-width: 0;
+	}
+	.recipe-photo-heading {
+		font-size: 12px;
+		font-weight: 600;
+		color: #059669;
+		margin: 0 0 2px;
+	}
+	.recipe-photo-hint-line {
+		font-size: 11px;
+		color: #9ca3af;
+		margin: 0 0 10px;
+		line-height: 1.45;
+	}
+	.recipe-photo-actions {
+		display: flex;
+		align-items: center;
+		gap: 14px;
+		flex-wrap: wrap;
+	}
 	.recipe-photo-upload-link {
 		font-size: 12px;
 		color: #059669;
@@ -1957,14 +2700,56 @@ import {
 		font-family: 'Tajawal', sans-serif;
 		font-weight: 600;
 	}
-	.recipe-photo-upload-link:hover { color: #047857; }
-	.recipe-photo-clear { font-size: 12px; color: #ef4444; background: none; border: none; cursor: pointer; padding: 0; font-family: 'Tajawal', sans-serif; text-decoration: underline; text-underline-offset: 2px; font-weight: 600; }
-	.hidden-file-input { position: absolute; width: 0; height: 0; opacity: 0; pointer-events: none; }
-	.view-recipe-hero { margin: -4px 0 12px; border-radius: 12px; overflow: hidden; border: 1px solid #e2e8f0; max-height: 220px; }
-	.view-recipe-hero img { width: 100%; height: 200px; object-fit: cover; display: block; }
+	.recipe-photo-upload-link:hover {
+		color: #047857;
+	}
+	.recipe-photo-clear {
+		font-size: 12px;
+		color: #ef4444;
+		background: none;
+		border: none;
+		cursor: pointer;
+		padding: 0;
+		font-family: 'Tajawal', sans-serif;
+		text-decoration: underline;
+		text-underline-offset: 2px;
+		font-weight: 600;
+	}
+	.hidden-file-input {
+		position: absolute;
+		width: 0;
+		height: 0;
+		opacity: 0;
+		pointer-events: none;
+	}
+	.view-recipe-hero {
+		margin: -4px 0 12px;
+		border-radius: 12px;
+		overflow: hidden;
+		border: 1px solid #e2e8f0;
+		max-height: 220px;
+	}
+	.view-recipe-hero img {
+		width: 100%;
+		height: 200px;
+		object-fit: cover;
+		display: block;
+	}
 	/* Ingredient search */
-	.ing-search-wrap { display: flex; align-items: center; gap: 8px; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 9px 13px; background: #fff; transition: border-color .15s; }
-	.ing-search-wrap:focus-within { border-color: #3cb96b; box-shadow: 0 0 0 3px rgba(60,185,107,.1); }
+	.ing-search-wrap {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		border: 1.5px solid #e2e8f0;
+		border-radius: 10px;
+		padding: 9px 13px;
+		background: #fff;
+		transition: border-color 0.15s;
+	}
+	.ing-search-wrap:focus-within {
+		border-color: #3cb96b;
+		box-shadow: 0 0 0 3px rgba(60, 185, 107, 0.1);
+	}
 	/* Inner field: no border/ring — @tailwindcss/forms adds a blue focus box-shadow on bare inputs */
 	.ing-search-input {
 		flex: 1;
@@ -1985,12 +2770,48 @@ import {
 		border: none !important;
 		box-shadow: none !important;
 	}
-	.ing-dropdown { position: absolute; top: calc(100% + 4px); right: 0; left: 0; background: #fff; border: 1.5px solid #e2e8f0; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.1); z-index: 50; overflow: hidden; }
-	.ing-dropdown-row { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 9px 14px; background: none; border: none; cursor: pointer; font-family: 'Tajawal', sans-serif; transition: background .12s; text-align: right; }
-	.ing-dropdown-row:hover { background: #f0fdf4; }
-	.ing-dropdown-name { font-size: 13px; font-weight: 500; color: #1e293b; }
-	.ing-dropdown-cal { font-size: 11px; color: #94a3b8; }
-	.ing-list { display: flex; flex-direction: column; gap: 10px; }
+	.ing-dropdown {
+		position: absolute;
+		top: calc(100% + 4px);
+		right: 0;
+		left: 0;
+		background: #fff;
+		border: 1.5px solid #e2e8f0;
+		border-radius: 10px;
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+		z-index: 50;
+		overflow: hidden;
+	}
+	.ing-dropdown-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		width: 100%;
+		padding: 9px 14px;
+		background: none;
+		border: none;
+		cursor: pointer;
+		font-family: 'Tajawal', sans-serif;
+		transition: background 0.12s;
+		text-align: right;
+	}
+	.ing-dropdown-row:hover {
+		background: #f0fdf4;
+	}
+	.ing-dropdown-name {
+		font-size: 13px;
+		font-weight: 500;
+		color: #1e293b;
+	}
+	.ing-dropdown-cal {
+		font-size: 11px;
+		color: #94a3b8;
+	}
+	.ing-list {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
 	.ing-row {
 		display: flex;
 		flex-direction: column;
@@ -2058,7 +2879,12 @@ import {
 		-webkit-appearance: none;
 		margin: 0;
 	}
-	.ing-unit { font-size: 12px; color: #64748b; font-weight: 600; white-space: nowrap; }
+	.ing-unit {
+		font-size: 12px;
+		color: #64748b;
+		font-weight: 600;
+		white-space: nowrap;
+	}
 	.ing-macros {
 		display: flex;
 		flex-wrap: wrap;
@@ -2169,24 +2995,96 @@ import {
 		gap: 10px 12px;
 		align-items: stretch;
 	}
-	.ing-empty { text-align: center; padding: 14px; font-size: 12.5px; color: #94a3b8; background: #f8fafc; border-radius: 8px; border: 1.5px dashed #e2e8f0; }
+	.ing-empty {
+		text-align: center;
+		padding: 14px;
+		font-size: 12.5px;
+		color: #94a3b8;
+		background: #f8fafc;
+		border-radius: 8px;
+		border: 1.5px dashed #e2e8f0;
+	}
 
 	/* Macro presets */
-	.preset-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
-	.preset-tab { padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1.5px solid #e2e8f0; background: #fff; color: #64748b; font-family: 'Tajawal', sans-serif; transition: all .15s; }
-	.preset-tab:hover { border-color: #cbd5e1; color: #334155; }
-	.preset-tab.active { border-color: #7c5cbf; background: #f5f3ff; color: #7c5cbf; }
-	.macro-inputs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
-	.macro-input-cell { display: flex; flex-direction: column; gap: 4px; }
-	.macro-input-cell label { font-size: 10px; color: #64748b; font-weight: 500; }
-	.macro-preview { display: flex; gap: 12px; margin-top: 6px; font-size: 12px; color: #64748b; }
-	.macro-preview span { background: #f8fafc; padding: 4px 10px; border-radius: 6px; }
+	.preset-tabs {
+		display: flex;
+		gap: 6px;
+		flex-wrap: wrap;
+	}
+	.preset-tab {
+		padding: 6px 12px;
+		border-radius: 8px;
+		font-size: 12px;
+		font-weight: 600;
+		cursor: pointer;
+		border: 1.5px solid #e2e8f0;
+		background: #fff;
+		color: #64748b;
+		font-family: 'Tajawal', sans-serif;
+		transition: all 0.15s;
+	}
+	.preset-tab:hover {
+		border-color: #cbd5e1;
+		color: #334155;
+	}
+	.preset-tab.active {
+		border-color: #7c5cbf;
+		background: #f5f3ff;
+		color: #7c5cbf;
+	}
+	.macro-inputs {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 8px;
+		margin-top: 8px;
+	}
+	.macro-input-cell {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+	.macro-input-cell label {
+		font-size: 10px;
+		color: #64748b;
+		font-weight: 500;
+	}
+	.macro-preview {
+		display: flex;
+		gap: 12px;
+		margin-top: 6px;
+		font-size: 12px;
+		color: #64748b;
+	}
+	.macro-preview span {
+		background: #f8fafc;
+		padding: 4px 10px;
+		border-radius: 6px;
+	}
 
 	/* View modal sections */
-	.view-meta { display: flex; flex-wrap: wrap; gap: 8px; }
-	.section-title { font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 8px; }
-	.nutrients-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; }
-	.nutrients-title { font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 10px; }
+	.view-meta {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+	.section-title {
+		font-size: 13px;
+		font-weight: 700;
+		color: #334155;
+		margin-bottom: 8px;
+	}
+	.nutrients-card {
+		background: #f8fafc;
+		border: 1px solid #e2e8f0;
+		border-radius: 12px;
+		padding: 14px;
+	}
+	.nutrients-title {
+		font-size: 12px;
+		font-weight: 700;
+		color: #475569;
+		margin-bottom: 10px;
+	}
 	/* 4 macros by default; 5 when fiber row exists */
 	.nutrients-grid {
 		display: grid;
@@ -2273,17 +3171,43 @@ import {
 	}
 
 	/* AI icon */
-	.ai-icon-wrap { width: 40px; height: 40px; background: linear-gradient(135deg, #f5f3ff, #ede9fe); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+	.ai-icon-wrap {
+		width: 40px;
+		height: 40px;
+		background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+		border-radius: 12px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
 
 	/* Spinner */
-	.spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; flex-shrink: 0; display: inline-block; }
-	.spinner-dark { border-color: rgba(100,116,139,.25); border-top-color: #64748b; }
-	@keyframes spin { to { transform: rotate(360deg); } }
+	.spinner {
+		width: 14px;
+		height: 14px;
+		border: 2px solid rgba(255, 255, 255, 0.3);
+		border-top-color: #fff;
+		border-radius: 50%;
+		animation: spin 0.6s linear infinite;
+		flex-shrink: 0;
+		display: inline-block;
+	}
+	.spinner-dark {
+		border-color: rgba(100, 116, 139, 0.25);
+		border-top-color: #64748b;
+	}
+	@keyframes spin {
+		to {
+			transform: rotate(360deg);
+		}
+	}
 
 	/* —— Mobile & narrow tablets —— */
 	@media (max-width: 720px) {
 		.page {
-			padding: 14px max(10px, env(safe-area-inset-right, 0px)) 28px max(10px, env(safe-area-inset-left, 0px));
+			padding: 14px max(10px, env(safe-area-inset-right, 0px)) 28px
+				max(10px, env(safe-area-inset-left, 0px));
 			max-width: 100%;
 		}
 		.header {

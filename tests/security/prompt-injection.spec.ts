@@ -86,7 +86,7 @@ test.describe('Prompt Injection — AI Meal Plan Endpoint', () => {
 
 		if (res.status() !== 200) return; // Non-200 is fine (rate limit, etc.)
 
-		let responseText = '';
+		let responseText: string;
 		try {
 			const body = await res.json();
 			responseText = JSON.stringify(body).toLowerCase();
@@ -138,10 +138,9 @@ test.describe('Prompt Injection — Chat Endpoint', () => {
 				return;
 			}
 
-			const res = await page.request.post(
-				`/api/chat/conversations/${convs[0].id}/messages`,
-				{ data: { content: payload } }
-			);
+			const res = await page.request.post(`/api/chat/conversations/${convs[0].id}/messages`, {
+				data: { content: payload }
+			});
 			expect(res.status()).toBeLessThan(500);
 		});
 	}

@@ -23,7 +23,7 @@ async function fillAndSubmitRegistrationForm(
 	await page.fill('#password', 'TestPass123');
 	// confirm_password may or may not exist depending on form structure
 	const confirmInput = page.locator('#confirm_password');
-	if (await confirmInput.count() > 0) {
+	if ((await confirmInput.count()) > 0) {
 		await confirmInput.fill('TestPass123');
 	}
 }
@@ -40,7 +40,9 @@ test.describe('OTP Verification', () => {
 		await page.waitForTimeout(1000);
 
 		// Either an OTP input field appeared, or a verification message is shown
-		const otpInput = page.locator('input[name="code"], [data-testid^="otp-input"], input[maxlength="6"]');
+		const otpInput = page.locator(
+			'input[name="code"], [data-testid^="otp-input"], input[maxlength="6"]'
+		);
 		const verifyMessage = page.locator('text=/رمز|تحقق|OTP|verification|code/i');
 
 		const hasOtpStep = (await otpInput.count()) > 0 || (await verifyMessage.count()) > 0;
@@ -57,16 +59,18 @@ test.describe('OTP Verification', () => {
 		await page.waitForTimeout(1000);
 
 		// Look for an OTP verify button
-		const verifyBtn = page.locator(
-			'[data-testid="verify-btn"], button:has-text("تحقق"), button[type="submit"]'
-		).last();
+		const verifyBtn = page
+			.locator('[data-testid="verify-btn"], button:has-text("تحقق"), button[type="submit"]')
+			.last();
 
 		const otpForm = page.locator('form[action*="verify"], [data-testid="otp-form"]');
 		const hasOtpForm = (await otpForm.count()) > 0;
 
 		if (hasOtpForm) {
 			await verifyBtn.click();
-			const error = page.locator('[role="alert"], p.text-xs.text-red-600, [data-testid="otp-error"]');
+			const error = page.locator(
+				'[role="alert"], p.text-xs.text-red-600, [data-testid="otp-error"]'
+			);
 			await expect(error.first()).toBeVisible({ timeout: 3000 });
 		} else {
 			// OTP step not reachable in test env (mail fails) — skip gracefully

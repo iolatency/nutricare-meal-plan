@@ -64,7 +64,9 @@ function parseQtyToken(token: string): number {
 	return Number.isFinite(n) ? n : NaN;
 }
 
-function parseLeadingQuantityUnit(line: string): { quantity: number; unit: string; name: string } | null {
+function parseLeadingQuantityUnit(
+	line: string
+): { quantity: number; unit: string; name: string } | null {
 	const m = line.trim().match(LEADING_QTY_UNIT);
 	if (!m) return null;
 	const qty = parseQtyToken(m[1]!);
@@ -211,7 +213,10 @@ function stepsToString(raw: unknown): string {
 /**
  * Coerce model root object to fields we persist (same recipe card shape as manual + UI).
  */
-export function parseRecipeRoot(raw: unknown, fallbackDescription: string): {
+export function parseRecipeRoot(
+	raw: unknown,
+	fallbackDescription: string
+): {
 	name: string;
 	name_ar: string;
 	stepsBody: string;
@@ -223,7 +228,8 @@ export function parseRecipeRoot(raw: unknown, fallbackDescription: string): {
 		throw new Error('Model returned invalid root JSON');
 	}
 	const o = raw as Record<string, unknown>;
-	const name = pickStr(o, ['name', 'name_en', 'title', 'english_name']) || fallbackDescription.slice(0, 120);
+	const name =
+		pickStr(o, ['name', 'name_en', 'title', 'english_name']) || fallbackDescription.slice(0, 120);
 	let name_ar = pickStr(o, ['name_ar', 'nameAr', 'arabic_name', 'title_ar']);
 	if (!name_ar.trim()) name_ar = name.trim() || fallbackDescription.slice(0, 120);
 
@@ -237,7 +243,8 @@ export function parseRecipeRoot(raw: unknown, fallbackDescription: string): {
 		throw new Error('Model returned no cooking steps; try again.');
 	}
 
-	let portions = coerceNumber(o.portions) ?? coerceNumber(o.servings) ?? coerceNumber(o.serving_count);
+	let portions =
+		coerceNumber(o.portions) ?? coerceNumber(o.servings) ?? coerceNumber(o.serving_count);
 	if (portions == null || portions < 1 || portions > 99) portions = 2;
 
 	const ingredients = o.ingredients ?? o.items ?? o.food_items;
@@ -245,7 +252,14 @@ export function parseRecipeRoot(raw: unknown, fallbackDescription: string): {
 		throw new Error('Invalid recipe JSON: ingredients must be an array');
 	}
 
-	return { name: name.trim(), name_ar: name_ar.trim(), stepsBody, yieldText, portions, ingredients };
+	return {
+		name: name.trim(),
+		name_ar: name_ar.trim(),
+		stepsBody,
+		yieldText,
+		portions,
+		ingredients
+	};
 }
 
 export function mergeYieldIntoSteps(yieldText: string, stepsBody: string): string {
@@ -269,7 +283,8 @@ export async function generateRecipe(
 	const { categoryId, targetCalories, portions, macroRatios, additionalInstructions } = options;
 
 	const constraints: string[] = [];
-	if (targetCalories) constraints.push(`Target approximately ${targetCalories} calories per serving.`);
+	if (targetCalories)
+		constraints.push(`Target approximately ${targetCalories} calories per serving.`);
 	if (portions) constraints.push(`Make exactly ${portions} servings.`);
 	if (macroRatios)
 		constraints.push(
@@ -278,9 +293,7 @@ export async function generateRecipe(
 	if (additionalInstructions) constraints.push(additionalInstructions);
 
 	const constraintsText =
-		constraints.length > 0
-			? `\nConstraints:\n${constraints.map((c) => `- ${c}`).join('\n')}`
-			: '';
+		constraints.length > 0 ? `\nConstraints:\n${constraints.map((c) => `- ${c}`).join('\n')}` : '';
 
 	const prompt = `Create one recipe for: "${recipeName}" (health-conscious, practical for meal planning).${constraintsText}
 
@@ -314,9 +327,17 @@ Strict rules:
 - Omit "yield" if not meaningful; otherwise short Arabic text (no steps inside yield).
 `;
 
-	let { content, finishReason } = await callDeepSeek(prompt, RECIPE_SYSTEM_PROMPT, RECIPE_DEEPSEEK_OPTS_FIRST);
+	let { content, finishReason } = await callDeepSeek(
+		prompt,
+		RECIPE_SYSTEM_PROMPT,
+		RECIPE_DEEPSEEK_OPTS_FIRST
+	);
 	if (finishReason === 'length') {
-		({ content, finishReason } = await callDeepSeek(prompt, RECIPE_SYSTEM_PROMPT, RECIPE_DEEPSEEK_OPTS_RETRY));
+		({ content, finishReason } = await callDeepSeek(
+			prompt,
+			RECIPE_SYSTEM_PROMPT,
+			RECIPE_DEEPSEEK_OPTS_RETRY
+		));
 	}
 	if (finishReason === 'length') {
 		throw new Error(
@@ -329,7 +350,7 @@ Strict rules:
 		root = parseDeepSeekJson(content);
 	} catch (e) {
 		const msg = e instanceof Error ? e.message : String(e);
-		throw new Error(`Invalid recipe JSON from model: ${msg}`);
+		throw new Error(`Invalid recipe JSON from model: ${msg}`, { cause: e });
 	}
 
 	const parsed = parseRecipeRoot(root, recipeName);
@@ -369,7 +390,7 @@ Strict rules:
 			matchClauses.push(like(foodItems.nameAr, `%${escapeLike(rawNameAr)}%`));
 		}
 
-		let foodItemId: number | null = null;
+		let foodItemId: number | null;
 		const existing =
 			matchClauses.length > 0
 				? db

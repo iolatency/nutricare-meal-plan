@@ -15,9 +15,15 @@ const store: Record<string, string> = {};
 
 const localStorageMock = {
 	getItem: (key: string) => store[key] ?? null,
-	setItem: (key: string, value: string) => { store[key] = value; },
-	removeItem: (key: string) => { delete store[key]; },
-	clear: () => { for (const k in store) delete store[k]; }
+	setItem: (key: string, value: string) => {
+		store[key] = value;
+	},
+	removeItem: (key: string) => {
+		delete store[key];
+	},
+	clear: () => {
+		for (const k in store) delete store[k];
+	}
 };
 
 Object.defineProperty(globalThis, 'localStorage', {
@@ -123,7 +129,12 @@ describe('needsReConsent', () => {
 
 	it('returns true when stored version differs from current', () => {
 		// Manually inject an old version
-		const old = { analytics: true, functional: true, acceptedAt: new Date().toISOString(), version: '0.9' };
+		const old = {
+			analytics: true,
+			functional: true,
+			acceptedAt: new Date().toISOString(),
+			version: '0.9'
+		};
 		localStorageMock.setItem(CONSENT_KEY, JSON.stringify(old));
 		expect(needsReConsent()).toBe(true);
 	});

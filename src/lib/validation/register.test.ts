@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-	validatePasswordIssues,
-	passwordIssuesToMessage,
-	validateUsername
-} from './register';
+import { validatePasswordIssues, passwordIssuesToMessage, validateUsername } from './register';
 
 describe('validatePasswordIssues', () => {
 	it('returns empty array for a valid password', () => {
@@ -80,9 +76,7 @@ describe('validateUsername', () => {
 
 	it('returns error for invalid characters', () => {
 		const err = validateUsername('user@name');
-		expect(err).toBe(
-			'اسم المستخدم يمكن أن يحتوي فقط على أحرف إنجليزية وأرقام ونقاط وشرطات سفلية'
-		);
+		expect(err).toBe('اسم المستخدم يمكن أن يحتوي فقط على أحرف إنجليزية وأرقام ونقاط وشرطات سفلية');
 	});
 
 	it('accepts exactly 4 characters', () => {

@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-	getLimitsForTags,
-	checkExclusions,
-	checkRestrictions,
-	validatePlan
-} from './validation';
+import { getLimitsForTags, checkExclusions, checkRestrictions, validatePlan } from './validation';
 import type { Macros, PlanGrid } from './types';
 
 // ─── getLimitsForTags ────────────────────────────────────────────────────────
@@ -161,9 +156,7 @@ describe('validatePlan', () => {
 	const invalidMacros: Macros = { c: 50, p: 30, f: 25 }; // sums to 105
 
 	it('returns pass status for empty plan with valid macros', () => {
-		const result = validatePlan(
-			emptyGrid, [], [], [], validMacros, new Map(), {}, 0
-		);
+		const result = validatePlan(emptyGrid, [], [], [], validMacros, new Map(), {}, 0);
 		expect(result.status).toBe('pass');
 		expect(result.macroValid).toBe(true);
 		expect(result.exclusionWarnings).toHaveLength(0);
@@ -171,9 +164,7 @@ describe('validatePlan', () => {
 	});
 
 	it('returns warn status when macros do not sum to 100', () => {
-		const result = validatePlan(
-			emptyGrid, [], [], [], invalidMacros, new Map(), {}, 0
-		);
+		const result = validatePlan(emptyGrid, [], [], [], invalidMacros, new Map(), {}, 0);
 		expect(result.status).toBe('warn');
 		expect(result.macroValid).toBe(false);
 	});
@@ -183,9 +174,7 @@ describe('validatePlan', () => {
 			'2025-01-01': { lunch: { recipeId: 1 } }
 		};
 		const recipeMap = new Map([[1, ['eggs']]]);
-		const result = validatePlan(
-			grid, ['eggs'], [], [], validMacros, recipeMap, {}, 1500
-		);
+		const result = validatePlan(grid, ['eggs'], [], [], validMacros, recipeMap, {}, 1500);
 		expect(result.status).toBe('fail');
 		expect(result.exclusionWarnings.length).toBeGreaterThan(0);
 	});

@@ -188,7 +188,9 @@ export function listConversationsForUser(
 
 	return rows.map((r) => {
 		const messages = parseMessages(r.messagesJson);
-		const unreadCount = messages.filter((m) => m.readAt === null && m.senderUserId !== userId).length;
+		const unreadCount = messages.filter(
+			(m) => m.readAt === null && m.senderUserId !== userId
+		).length;
 		return {
 			id: r.id,
 			dietitianId: r.dietitianId,
@@ -205,11 +207,7 @@ export function listConversationsForUser(
 }
 
 export function getConversationRow(conversationId: number) {
-	return db
-		.select()
-		.from(chatConversations)
-		.where(eq(chatConversations.id, conversationId))
-		.get();
+	return db.select().from(chatConversations).where(eq(chatConversations.id, conversationId)).get();
 }
 
 export function assertParticipant(
@@ -256,7 +254,10 @@ export function getOrCreateForPatient(patientUserId: number): ChatConversationDT
 	return listConversationsForUser(patientUserId, 'patient').find((c) => c.id === row.id)!;
 }
 
-export function getOrCreateForDietitian(dietitianId: number, clientId: number): ChatConversationDTO {
+export function getOrCreateForDietitian(
+	dietitianId: number,
+	clientId: number
+): ChatConversationDTO {
 	if (!isClientInDietitianOrg(dietitianId, clientId)) {
 		throw new ChatForbiddenError('You can only chat with clients in your organization.');
 	}

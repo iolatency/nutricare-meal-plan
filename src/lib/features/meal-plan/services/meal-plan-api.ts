@@ -10,6 +10,9 @@ export async function saveMealPlan(formData: FormData) {
 	return fetch('?/savePlan', { method: 'POST', body: formData });
 }
 
-export async function upsertDiagnosis(action: 'createDiagnosis' | 'updateDiagnosis', formData: FormData) {
+export async function upsertDiagnosis(
+	action: 'createDiagnosis' | 'updateDiagnosis',
+	formData: FormData
+) {
 	return fetch(`?/${action}`, { method: 'POST', body: formData });
 }

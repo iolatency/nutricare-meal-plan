@@ -41,9 +41,7 @@ test.describe('Chat — Auth Protection', () => {
 		expect(res.status()).toBe(401);
 	});
 
-	test('unauthenticated navigation to /dietitian/messages redirects to login', async ({
-		page
-	}) => {
+	test('unauthenticated navigation to /dietitian/messages redirects to login', async ({ page }) => {
 		await page.goto('/dietitian/messages');
 		await expect(page).toHaveURL(/\/login/);
 	});
@@ -118,10 +116,9 @@ test.describe('Chat — Prompt Injection API Protection', () => {
 			}
 
 			const convId = convs[0].id;
-			const res = await page.request.post(
-				`/api/chat/conversations/${convId}/messages`,
-				{ data: { content: payload } }
-			);
+			const res = await page.request.post(`/api/chat/conversations/${convId}/messages`, {
+				data: { content: payload }
+			});
 			// Must not cause server error
 			expect(res.status()).toBeLessThan(500);
 		});

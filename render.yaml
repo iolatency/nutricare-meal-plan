@@ -10,7 +10,7 @@ services:
     startCommand: npm start
     envVars:
       - key: NODE_VERSION
-        value: "22"
+        value: '22'
       - key: DATABASE_URL
         value: file:/var/data/nutricare.db
     disk:

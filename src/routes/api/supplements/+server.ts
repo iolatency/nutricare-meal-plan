@@ -23,7 +23,12 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 	} catch {
 		return json({ error: 'Invalid JSON body' }, { status: 400 });
 	}
-	if (!body || typeof body !== 'object' || !('name' in body) || !String((body as Record<string, unknown>).name ?? '').trim()) {
+	if (
+		!body ||
+		typeof body !== 'object' ||
+		!('name' in body) ||
+		!String((body as Record<string, unknown>).name ?? '').trim()
+	) {
 		return json({ error: 'name is required' }, { status: 400 });
 	}
 	return json(createSupplement(body));

@@ -10,7 +10,8 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	const ownerOnly = url.searchParams.get('owner') === '1';
 	const excludeEdamam = url.searchParams.get('excludeEdamam') === '1';
 	const maxRaw = Number(url.searchParams.get('max') ?? '100');
-	const maxResults = Number.isFinite(maxRaw) && maxRaw > 0 ? Math.min(200, Math.floor(maxRaw)) : 100;
+	const maxResults =
+		Number.isFinite(maxRaw) && maxRaw > 0 ? Math.min(200, Math.floor(maxRaw)) : 100;
 
 	const result = await searchFoodsForApiComplete({
 		q,

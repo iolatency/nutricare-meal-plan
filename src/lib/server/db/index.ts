@@ -114,10 +114,12 @@ function runSqliteMigrations(orm: ReturnType<typeof drizzle<typeof schema>>) {
 			console.warn('[db] Skipping legacy migration step (duplicate image_url column).');
 		} else if (
 			combined.includes('no such column: "remember_token"') ||
-			combined.includes("no such column: remember_token")
+			combined.includes('no such column: remember_token')
 		) {
 			// Migration 0003 drops columns that were never present in bootstrap-created DBs (fresh dev/test).
-			console.warn('[db] Skipping legacy drop-columns migration (columns already absent in schema).');
+			console.warn(
+				'[db] Skipping legacy drop-columns migration (columns already absent in schema).'
+			);
 		} else {
 			throw err;
 		}
@@ -139,8 +141,7 @@ if (!building) {
 	applySqlitePragmas(client);
 	runSqliteMigrations(db);
 
-	const skipSeed =
-		process.env.SKIP_DB_SEED === '1' || process.env.SKIP_DB_SEED === 'true';
+	const skipSeed = process.env.SKIP_DB_SEED === '1' || process.env.SKIP_DB_SEED === 'true';
 	const forceSeed =
 		process.env.RUN_DB_SEED_ON_START === '1' || process.env.RUN_DB_SEED_ON_START === 'true';
 

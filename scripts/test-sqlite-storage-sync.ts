@@ -7,7 +7,7 @@
  *
  * Uses ./local.db as upload payload if it exists; otherwise a tiny placeholder file.
  */
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {
@@ -37,7 +37,10 @@ const pulledPath = path.join(tmpDir, 'pulled.db');
 console.log('[test] Pull from Storage →', pulledPath);
 await pullSqliteFromSupabaseStorage(cfg, pulledPath);
 const pulledSize = existsSync(pulledPath) ? readFileSync(pulledPath).length : 0;
-console.log('[test] Pull result:', pulledSize > 0 ? `file written (${pulledSize} bytes)` : 'no remote object (404) — skipped write');
+console.log(
+	'[test] Pull result:',
+	pulledSize > 0 ? `file written (${pulledSize} bytes)` : 'no remote object (404) — skipped write'
+);
 
 const sourceForPush = path.join(root, 'local.db');
 let payloadPath: string;

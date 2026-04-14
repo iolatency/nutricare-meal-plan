@@ -23,6 +23,7 @@ A full-stack nutrition management platform for dietitians and their patients. Bu
 ## What it does
 
 **Dietitian portal** — everything a dietitian needs to manage their patients:
+
 - View and activate patient accounts
 - Create meal plan sessions per patient
 - Browse and manage a food items catalog
@@ -30,6 +31,7 @@ A full-stack nutrition management platform for dietitians and their patients. Bu
 - Prescribe supplement regimens
 
 **Auth flow:**
+
 - Registration with OTP email verification
 - Cookie-based sessions (no JWT)
 - Role-based routing: dietitians and patients see completely separate portals
@@ -38,16 +40,16 @@ A full-stack nutrition management platform for dietitians and their patients. Bu
 
 ## Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Framework | SvelteKit (`@sveltejs/adapter-node`) |
-| ORM | Drizzle ORM + Drizzle Kit |
-| Database | SQLite (`better-sqlite3`) |
-| Styling | Tailwind CSS v4 |
-| Email | Resend (OTP codes) |
-| AI | DeepSeek API (recipe generation) |
-| Food search | Edamam API (optional) |
-| Storage sync | Supabase Storage (optional) |
+| Layer        | Technology                           |
+| ------------ | ------------------------------------ |
+| Framework    | SvelteKit (`@sveltejs/adapter-node`) |
+| ORM          | Drizzle ORM + Drizzle Kit            |
+| Database     | SQLite (`better-sqlite3`)            |
+| Styling      | Tailwind CSS v4                      |
+| Email        | Resend (OTP codes)                   |
+| AI           | DeepSeek API (recipe generation)     |
+| Food search  | Edamam API (optional)                |
+| Storage sync | Supabase Storage (optional)          |
 
 ---
 
@@ -121,10 +123,10 @@ DATABASE_URL=file:local.db npm run db:seed
 
 What gets created:
 
-| Account | Email | Password | Role |
-|---------|-------|----------|------|
-| Dev Dietitian | `dev@example.com` | `password` | dietitian |
-| Patient | `patient@example.com` | `password` | patient |
+| Account       | Email                 | Password   | Role      |
+| ------------- | --------------------- | ---------- | --------- |
+| Dev Dietitian | `dev@example.com`     | `password` | dietitian |
+| Patient       | `patient@example.com` | `password` | patient   |
 
 The meal catalog (food items, categories) is also loaded from `scripts/seed-meal-domain.ts`.
 
@@ -237,25 +239,25 @@ After logging in as a patient:
 
 ## Environment variables
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `DATABASE_URL` | **Yes** | — | SQLite file path. Use `file:local.db` for local dev |
-| `RESEND_API_KEY` | No | — | Resend API key for OTP emails. **Required in production.** Without it, OTP codes are printed to the server console in dev |
-| `EMAIL_FROM` | No | — | Sender address, e.g. `NutriCare <no-reply@example.com>` |
-| `DEEPSEEK_API_KEY` | No | — | Enables the AI recipe generation button. Without it, the button is hidden |
-| `EDAMAM_APP_ID` | No | — | Edamam food search app ID (get free keys at developer.edamam.com) |
-| `EDAMAM_APP_KEY` | No | — | Edamam food search app key |
-| `SQLITE_STORAGE_SYNC` | No | `0` | Set to `1` to sync the SQLite file to Supabase Storage on every request |
-| `SUPABASE_URL` | No | — | Required when `SQLITE_STORAGE_SYNC=1` |
-| `SUPABASE_SERVICE_ROLE_KEY` | No | — | Required when `SQLITE_STORAGE_SYNC=1`. Server-only — never expose to the client |
-| `SQLITE_STORAGE_BUCKET` | No | — | Supabase Storage bucket name, e.g. `media` |
-| `SQLITE_STORAGE_OBJECT_PATH` | No | — | Path inside the bucket, e.g. `nutricare.sqlite` |
-| `SKIP_DB_SEED` | No | — | Set to `1` to prevent auto-seed on server start |
-| `RUN_DB_SEED_ON_START` | No | — | Set to `1` to force re-seed even when users already exist |
-| `SEED_PATIENT_NAME` | No | `Patient` | Name for the patient created by `db:seed` |
-| `SEED_PATIENT_EMAIL` | No | `patient@example.com` | Email for the seeded patient |
-| `SEED_PATIENT_USERNAME` | No | `patient` | Username for the seeded patient |
-| `SEED_PATIENT_PASSWORD` | No | `password` | Password for the seeded patient |
+| Variable                     | Required | Default               | Description                                                                                                               |
+| ---------------------------- | -------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`               | **Yes**  | —                     | SQLite file path. Use `file:local.db` for local dev                                                                       |
+| `RESEND_API_KEY`             | No       | —                     | Resend API key for OTP emails. **Required in production.** Without it, OTP codes are printed to the server console in dev |
+| `EMAIL_FROM`                 | No       | —                     | Sender address, e.g. `NutriCare <no-reply@example.com>`                                                                   |
+| `DEEPSEEK_API_KEY`           | No       | —                     | Enables the AI recipe generation button. Without it, the button is hidden                                                 |
+| `EDAMAM_APP_ID`              | No       | —                     | Edamam food search app ID (get free keys at developer.edamam.com)                                                         |
+| `EDAMAM_APP_KEY`             | No       | —                     | Edamam food search app key                                                                                                |
+| `SQLITE_STORAGE_SYNC`        | No       | `0`                   | Set to `1` to sync the SQLite file to Supabase Storage on every request                                                   |
+| `SUPABASE_URL`               | No       | —                     | Required when `SQLITE_STORAGE_SYNC=1`                                                                                     |
+| `SUPABASE_SERVICE_ROLE_KEY`  | No       | —                     | Required when `SQLITE_STORAGE_SYNC=1`. Server-only — never expose to the client                                           |
+| `SQLITE_STORAGE_BUCKET`      | No       | —                     | Supabase Storage bucket name, e.g. `media`                                                                                |
+| `SQLITE_STORAGE_OBJECT_PATH` | No       | —                     | Path inside the bucket, e.g. `nutricare.sqlite`                                                                           |
+| `SKIP_DB_SEED`               | No       | —                     | Set to `1` to prevent auto-seed on server start                                                                           |
+| `RUN_DB_SEED_ON_START`       | No       | —                     | Set to `1` to force re-seed even when users already exist                                                                 |
+| `SEED_PATIENT_NAME`          | No       | `Patient`             | Name for the patient created by `db:seed`                                                                                 |
+| `SEED_PATIENT_EMAIL`         | No       | `patient@example.com` | Email for the seeded patient                                                                                              |
+| `SEED_PATIENT_USERNAME`      | No       | `patient`             | Username for the seeded patient                                                                                           |
+| `SEED_PATIENT_PASSWORD`      | No       | `password`            | Password for the seeded patient                                                                                           |
 
 ---
 
@@ -263,24 +265,24 @@ After logging in as a patient:
 
 Run all scripts with `DATABASE_URL=file:local.db npm run <script>`.
 
-| Script | What it does |
-|--------|-------------|
-| `db:push` | Apply the current Drizzle schema to the database. Run this after any schema change |
-| `db:push:force` | Same as above but forces changes that would normally require manual review (e.g. dropping columns) |
-| `db:generate` | Generate SQL migration files from schema changes (writes to `drizzle/`) |
-| `db:migrate` | Run pending SQL migration files from `drizzle/` |
-| `db:studio` | Open Drizzle Studio — a browser-based GUI to inspect and edit the database live |
-| `db:seed` | Full seed: creates dietitian + patient + meal catalog |
-| `db:seed-dev-user` | Seed only the dev dietitian account (`dev@example.com` / `password`) |
-| `db:seed-demo-journey` | Seed a complete realistic workflow on top of the base seed |
-| `db:reset` | Delete all rows, then re-run `db:seed` |
-| `db:hard-reset` | Drop the database file, re-push the schema, then seed |
-| `db:clear` | Delete all rows but keep the schema and file |
-| `db:drop` | Delete the database file entirely |
-| `db:import-v0` | Import data from a legacy NutriCare v0 SQLite file. Set `NUTRICARE_V0_DB=/path/to/file.sqlite` |
-| `db:patch-v2` | One-time patch to migrate supplement data to the v2 format |
-| `db:dedupe-sessions` | Remove duplicate meal plan sessions (maintenance script) |
-| `db:verify-seed` | Run checks to confirm seed data is present and correctly formed |
+| Script                 | What it does                                                                                       |
+| ---------------------- | -------------------------------------------------------------------------------------------------- |
+| `db:push`              | Apply the current Drizzle schema to the database. Run this after any schema change                 |
+| `db:push:force`        | Same as above but forces changes that would normally require manual review (e.g. dropping columns) |
+| `db:generate`          | Generate SQL migration files from schema changes (writes to `drizzle/`)                            |
+| `db:migrate`           | Run pending SQL migration files from `drizzle/`                                                    |
+| `db:studio`            | Open Drizzle Studio — a browser-based GUI to inspect and edit the database live                    |
+| `db:seed`              | Full seed: creates dietitian + patient + meal catalog                                              |
+| `db:seed-dev-user`     | Seed only the dev dietitian account (`dev@example.com` / `password`)                               |
+| `db:seed-demo-journey` | Seed a complete realistic workflow on top of the base seed                                         |
+| `db:reset`             | Delete all rows, then re-run `db:seed`                                                             |
+| `db:hard-reset`        | Drop the database file, re-push the schema, then seed                                              |
+| `db:clear`             | Delete all rows but keep the schema and file                                                       |
+| `db:drop`              | Delete the database file entirely                                                                  |
+| `db:import-v0`         | Import data from a legacy NutriCare v0 SQLite file. Set `NUTRICARE_V0_DB=/path/to/file.sqlite`     |
+| `db:patch-v2`          | One-time patch to migrate supplement data to the v2 format                                         |
+| `db:dedupe-sessions`   | Remove duplicate meal plan sessions (maintenance script)                                           |
+| `db:verify-seed`       | Run checks to confirm seed data is present and correctly formed                                    |
 
 ---
 

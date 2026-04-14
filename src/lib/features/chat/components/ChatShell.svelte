@@ -132,9 +132,7 @@
 	}
 
 	const grouped = $derived.by(() => {
-		type Row =
-			| { kind: 'day'; key: string; label: string }
-			| { kind: 'msg'; msg: ChatMessage };
+		type Row = { kind: 'day'; key: string; label: string } | { kind: 'msg'; msg: ChatMessage };
 		const out: Row[] = [];
 		let lastDay: string | null = null;
 		const asc = [...messages].sort((a, b) => (a.createdAt > b.createdAt ? 1 : -1));
@@ -223,15 +221,26 @@
 		e.preventDefault();
 		void send();
 	}
-
 </script>
 
 <div class="chat-shell" dir="rtl">
 	<div class="chat-head">
 		{#if onBack}
 			<button type="button" class="chat-back-btn" onclick={onBack} aria-label="العودة للمحادثات">
-				<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+				<svg
+					width="18"
+					height="18"
+					fill="none"
+					stroke="currentColor"
+					viewBox="0 0 24 24"
+					aria-hidden="true"
+				>
+					<path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M15 19l-7-7 7-7"
+					/>
 				</svg>
 			</button>
 		{/if}
@@ -493,7 +502,12 @@
 		}
 	}
 	.chat-bubble.mine {
-		background: linear-gradient(165deg, #34b16f 0%, var(--fp-accent) 45%, var(--fp-accent-deep) 100%);
+		background: linear-gradient(
+			165deg,
+			#34b16f 0%,
+			var(--fp-accent) 45%,
+			var(--fp-accent-deep) 100%
+		);
 		color: #fff;
 		border-color: rgba(31, 122, 74, 0.45);
 		border-bottom-left-radius: 5px;
@@ -602,7 +616,12 @@
 		padding: 0 22px;
 		border: 1px solid var(--fp-accent-deep);
 		border-radius: 12px;
-		background: linear-gradient(165deg, #34b16f 0%, var(--fp-accent) 45%, var(--fp-accent-deep) 100%);
+		background: linear-gradient(
+			165deg,
+			#34b16f 0%,
+			var(--fp-accent) 45%,
+			var(--fp-accent-deep) 100%
+		);
 		color: #fff;
 		font-weight: 600;
 		font-size: 13.5px;

@@ -25,31 +25,31 @@ const BASE = __ENV.BASE_URL || 'http://localhost:5173';
  * @returns {string}  Cookie header string, e.g. "nc_session=abc123; Path=/; HttpOnly"
  */
 export function getSessionCookie(identifier, password) {
-  const res = http.post(
-    `${BASE}/login`,
-    { identifier, password },
-    {
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      redirects: 0,  // Capture the Set-Cookie header before following redirect
-    }
-  );
+	const res = http.post(
+		`${BASE}/login`,
+		{ identifier, password },
+		{
+			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+			redirects: 0 // Capture the Set-Cookie header before following redirect
+		}
+	);
 
-  const setCookie = res.headers['Set-Cookie'] || '';
-  check(res, {
-    'login returned a session cookie': () => setCookie.includes('nc_session'),
-  });
+	const setCookie = res.headers['Set-Cookie'] || '';
+	check(res, {
+		'login returned a session cookie': () => setCookie.includes('nc_session')
+	});
 
-  // Extract cookie value for the Authorization jar
-  const match = setCookie.match(/nc_session=([^;]+)/);
-  return match ? `nc_session=${match[1]}` : '';
+	// Extract cookie value for the Authorization jar
+	const match = setCookie.match(/nc_session=([^;]+)/);
+	return match ? `nc_session=${match[1]}` : '';
 }
 
 /**
  * Returns a headers object containing the session cookie.
  */
 export function sessionHeaders(cookie) {
-  return {
-    'Cookie': cookie,
-    'Content-Type': 'application/json',
-  };
+	return {
+		Cookie: cookie,
+		'Content-Type': 'application/json'
+	};
 }

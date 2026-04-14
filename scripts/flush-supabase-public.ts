@@ -18,7 +18,9 @@ if (!DATABASE_URL.startsWith('postgres')) {
 	process.exit(1);
 }
 if (!confirmed) {
-	console.error('Refusing without CONFIRM_FLUSH_SUPABASE=yes (this destroys all tables in public).');
+	console.error(
+		'Refusing without CONFIRM_FLUSH_SUPABASE=yes (this destroys all tables in public).'
+	);
 	process.exit(1);
 }
 
@@ -41,7 +43,9 @@ async function main() {
 	console.log('Flushing schema public (DROP + CREATE)…');
 	await client.query(sql);
 	await client.end();
-	console.log('Done. public is empty; recreate tables (e.g. drizzle push for Postgres) before using the app.');
+	console.log(
+		'Done. public is empty; recreate tables (e.g. drizzle push for Postgres) before using the app.'
+	);
 }
 
 main().catch((e) => {

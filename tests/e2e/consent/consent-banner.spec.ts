@@ -28,10 +28,7 @@ test.describe('Consent Banner — First visit', () => {
 	});
 
 	test('no consent record exists on first visit', async ({ page }) => {
-		const consent = await page.evaluate(
-			(key) => localStorage.getItem(key),
-			CONSENT_KEY
-		);
+		const consent = await page.evaluate((key) => localStorage.getItem(key), CONSENT_KEY);
 		expect(consent).toBeNull();
 	});
 

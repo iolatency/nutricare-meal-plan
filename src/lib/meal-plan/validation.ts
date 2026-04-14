@@ -1,4 +1,4 @@
-import type { Macros, PlanGrid, PlanSlot, RecipeNutrients } from './types';
+import type { Macros, PlanGrid } from './types';
 
 /* ─── Diet-tag → nutrient threshold rules ─── */
 
@@ -20,7 +20,7 @@ const TAG_LIMITS: Record<string, NutrientLimit[]> = {
 	'عالي بالألياف': [{ nutrient: 'fiber', label: 'ألياف (حد أدنى)', maxMg: -25000, unit: 'mg' }],
 	'قليل الألياف': [{ nutrient: 'fiber', label: 'ألياف', maxMg: 10000, unit: 'mg' }],
 	'منخفض بالألياف': [{ nutrient: 'fiber', label: 'ألياف', maxMg: 10000, unit: 'mg' }],
-	'منخفض الكالسيوم': [{ nutrient: 'calcium', label: 'كالسيوم', maxMg: 600, unit: 'mg' }],
+	'منخفض الكالسيوم': [{ nutrient: 'calcium', label: 'كالسيوم', maxMg: 600, unit: 'mg' }]
 };
 
 export function getLimitsForTags(tags: string[], dietTypes: string[]): NutrientLimit[] {
@@ -103,8 +103,14 @@ export interface RestrictionWarning {
 
 export function checkRestrictions(
 	limits: NutrientLimit[],
-	supplementTotals: { sodium?: number; potassium?: number; phosphorus?: number; calcium?: number; fiber?: number },
-	planCalories: number
+	supplementTotals: {
+		sodium?: number;
+		potassium?: number;
+		phosphorus?: number;
+		calcium?: number;
+		fiber?: number;
+	},
+	_planCalories: number
 ): RestrictionWarning[] {
 	const warnings: RestrictionWarning[] = [];
 

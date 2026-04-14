@@ -29,8 +29,28 @@ describe('normalizeIngredients', () => {
 
 	it('reads alternate object keys and Arabic-only name', () => {
 		const out = normalizeIngredients([
-			{ item: 'Banana', name_ar: 'موز', quantity: 1, unit: 'piece', calories: 90, protein: 1, carbs: 23, fat: 0, fiber: 3 },
-			{ ingredient: 'Oats', arabic: 'شوفان', qty: 40, unit: 'g', calories: 150, protein: 5, carbs: 27, fat: 3, fiber: 4 }
+			{
+				item: 'Banana',
+				name_ar: 'موز',
+				quantity: 1,
+				unit: 'piece',
+				calories: 90,
+				protein: 1,
+				carbs: 23,
+				fat: 0,
+				fiber: 3
+			},
+			{
+				ingredient: 'Oats',
+				arabic: 'شوفان',
+				qty: 40,
+				unit: 'g',
+				calories: 150,
+				protein: 5,
+				carbs: 27,
+				fat: 3,
+				fiber: 4
+			}
 		]);
 		expect(out[0]!.name).toBe('Banana');
 		expect(out[0]!.name_ar).toBe('موز');
@@ -84,7 +104,17 @@ describe('parseRecipeRoot + mergeYieldIntoSteps + nutrientsFromAiIngredients', (
 			portions: 3,
 			steps: '1. اغسل العدس.\n2. اطبخ 20 دقيقة.',
 			ingredients: [
-				{ name: 'lentils', name_ar: 'عدس', quantity: 200, unit: 'g', calories: 230, protein: 18, carbs: 40, fat: 1, fiber: 16 }
+				{
+					name: 'lentils',
+					name_ar: 'عدس',
+					quantity: 200,
+					unit: 'g',
+					calories: 230,
+					protein: 18,
+					carbs: 40,
+					fat: 1,
+					fiber: 16
+				}
 			]
 		};
 		const p = parseRecipeRoot(raw, 'fallback');
@@ -105,7 +135,19 @@ describe('parseRecipeRoot + mergeYieldIntoSteps + nutrientsFromAiIngredients', (
 			nameAr: 'سلطة',
 			portions: 2,
 			steps: '1. قطع الخضار.',
-			items: [{ name: 'tomato', name_ar: 'طماطم', quantity: 100, unit: 'g', calories: 18, protein: 1, carbs: 4, fat: 0, fiber: 1 }]
+			items: [
+				{
+					name: 'tomato',
+					name_ar: 'طماطم',
+					quantity: 100,
+					unit: 'g',
+					calories: 18,
+					protein: 1,
+					carbs: 4,
+					fat: 0,
+					fiber: 1
+				}
+			]
 		};
 		const p = parseRecipeRoot(raw, 'x');
 		expect(p.name_ar).toBe('سلطة');

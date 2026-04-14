@@ -18,8 +18,12 @@ export const chatConversations = sqliteTable(
 		lastMessageBody: text('last_message_body'),
 		/** Denormalized: ISO timestamp of the latest message for sorting. */
 		lastMessageAt: text('last_message_at'),
-		createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
-		updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`)
+		createdAt: text('created_at')
+			.notNull()
+			.default(sql`(datetime('now'))`),
+		updatedAt: text('updated_at')
+			.notNull()
+			.default(sql`(datetime('now'))`)
 	},
 	(t) => [
 		uniqueIndex('chat_conv_dietitian_client_idx').on(t.dietitianId, t.clientId),
