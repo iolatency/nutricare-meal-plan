@@ -14,6 +14,16 @@
 		أنت مسجّل كـ {data.user.role === 'dietitian' ? 'أخصائي تغذية' : 'مريض'}. لوحة التحكم قيد
 		الإعداد.
 	</p>
+	{#if data.user.role === 'patient'}
+		<p class="mb-6">
+			<a
+				href="/patient/messages"
+				class="inline-flex rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+			>
+				الرسائل مع أخصائي التغذية
+			</a>
+		</p>
+	{/if}
 	<p class="text-sm text-gray-400">
 		سجّل الخروج لاحقاً من القائمة عندما تكون جاهزة — هذه صفحة مؤقتة بعد تسجيل الدخول.
 	</p>

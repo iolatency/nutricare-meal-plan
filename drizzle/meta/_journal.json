@@ -1,0 +1,41 @@
+{
+	"version": "7",
+	"dialect": "sqlite",
+	"entries": [
+		{
+			"idx": 0,
+			"version": "7",
+			"when": 1744500000000,
+			"tag": "0000_runtime_schema_cleanup",
+			"breakpoints": true
+		},
+		{
+			"idx": 1,
+			"version": "7",
+			"when": 1744600000000,
+			"tag": "0001_external_food_catalog",
+			"breakpoints": true
+		},
+		{
+			"idx": 2,
+			"version": "7",
+			"when": 1744700000000,
+			"tag": "0002_chat",
+			"breakpoints": true
+		},
+		{
+			"idx": 3,
+			"version": "7",
+			"when": 1744800000000,
+			"tag": "0003_drop_dead_columns",
+			"breakpoints": true
+		},
+		{
+			"idx": 4,
+			"version": "7",
+			"when": 1744900000000,
+			"tag": "0004_chat_json_messages",
+			"breakpoints": true
+		}
+	]
+}

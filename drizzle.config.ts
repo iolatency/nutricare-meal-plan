@@ -9,6 +9,8 @@ export default defineConfig({
 	schema: './src/lib/server/db/schema/index.ts',
 	dialect: 'sqlite',
 	dbCredentials: { url },
-	strict: true,
+	// If true, `drizzle-kit push` waits for stdin — breaks empty-DB bootstrap on Render.
+	strict: false,
+	// Verbose SQL preview for local `npm run db:push`. Render bootstrap uses drizzle.bootstrap.config.ts (quiet).
 	verbose: true
 });

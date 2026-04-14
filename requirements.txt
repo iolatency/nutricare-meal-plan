@@ -1,0 +1,12 @@
+# NutriCare Meal Plan — dependency install
+#
+# This project is Node.js / SvelteKit. There are no pip (Python) packages for
+# the application. Install libraries with npm, not pip:
+#
+#   npm install
+#
+# Source of truth: package.json  |  Lockfile: package-lock.json
+#
+# Python is only sometimes needed on your machine as a build helper for
+# node-gyp when compiling better-sqlite3 (see REQUIREMENTS.md). It is not
+# installed via this file.

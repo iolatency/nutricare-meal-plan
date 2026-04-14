@@ -10,7 +10,9 @@ import { membershipRolesToAppRole } from './membership-role';
 import {
 	deleteAuthSessionByToken,
 	findUserBasicsForValidToken,
-	insertAuthSession
+	getSessionExpiry,
+	insertAuthSession,
+	refreshAuthSession
 } from './session.repository';
 import type { SessionUser } from './auth.types';
 
@@ -35,19 +37,36 @@ export async function getUserFromToken(token: string): Promise<SessionUser | nul
 	if (!row) return null;
 
 	const rolesText = await getMembershipRolesForUser(row.id);
+	const role = membershipRolesToAppRole(rolesText);
 
 	return {
 		id: row.id,
 		name: row.name,
 		email: row.email,
-		role: membershipRolesToAppRole(rolesText)
+		role,
+		canAccessPatientApp: role === 'dietitian' ? true : Boolean(row.canAccessPatientApp)
 	};
 }
 
 export async function getUserFromCookie(event: RequestEvent): Promise<SessionUser | null> {
 	const token = event.cookies.get(SESSION_COOKIE);
 	if (!token) return null;
-	return getUserFromToken(token);
+
+	const user = await getUserFromToken(token);
+	if (!user) return null;
+
+	// Sliding session: refresh expiry when less than 7 days remain
+	const sessionRow = await getSessionExpiry(token);
+	if (sessionRow) {
+		const daysRemaining = (new Date(sessionRow.expiresAt).getTime() - Date.now()) / 86_400_000;
+		if (daysRemaining < 7) {
+			const newExpiry = new Date(Date.now() + SESSION_DAYS * 86_400_000).toISOString();
+			await refreshAuthSession(token, newExpiry);
+			setSessionCookie(event, token);
+		}
+	}
+
+	return user;
 }
 
 export function setSessionCookie(event: RequestEvent, token: string) {

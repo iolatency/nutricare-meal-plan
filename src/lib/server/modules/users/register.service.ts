@@ -119,7 +119,8 @@ export async function registerNewUser(raw: RegisterFormInput): Promise<RegisterR
 					password: passwordHash,
 					emailVerifiedAt: null,
 					createdAt: now,
-					updatedAt: now
+					updatedAt: now,
+					canAccessPatientApp: raw.role === 'dietitian'
 				})
 				.returning({ id: users.id })
 				.get();

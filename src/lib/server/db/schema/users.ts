@@ -8,10 +8,8 @@ export const users = sqliteTable('users', {
 	phone: text('phone').unique(),
 	emailVerifiedAt: text('email_verified_at'),
 	password: text('password').notNull(),
-	rememberToken: text('remember_token'),
 	createdAt: text('created_at'),
 	updatedAt: text('updated_at'),
-	twoFactorSecret: text('two_factor_secret'),
-	twoFactorRecoveryCodes: text('two_factor_recovery_codes'),
-	twoFactorConfirmedAt: text('two_factor_confirmed_at')
+	/** When false, patient accounts cannot use /patient routes until a dietitian activates them. */
+	canAccessPatientApp: integer('can_access_patient_app', { mode: 'boolean' }).notNull().default(true)
 });

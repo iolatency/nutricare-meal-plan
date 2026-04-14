@@ -28,6 +28,11 @@
 		class="relative hidden w-1/2 overflow-hidden lg:flex"
 		style="background: linear-gradient(135deg, #2ec27e 0%, #1a9e60 100%)"
 	>
+		<!-- Dot grid pattern -->
+		<div
+			class="absolute inset-0 opacity-25"
+			style="background-image: radial-gradient(circle, rgba(255,255,255,0.7) 1.5px, transparent 1.5px); background-size: 28px 28px;"
+		></div>
 		<div class="absolute inset-0 opacity-10">
 			<div class="absolute top-20 right-20 h-64 w-64 rounded-full border-2 border-white"></div>
 			<div class="absolute bottom-32 left-16 h-48 w-48 rounded-full border-2 border-white"></div>
@@ -37,9 +42,8 @@
 			<img
 				src="/logo-name.png"
 				alt="NutriCare"
-				class="mb-8 h-16 brightness-0 invert"
-				width="200"
-				height="64"
+				class="mb-8 h-16 w-auto max-w-[min(280px,85vw)] object-contain brightness-0 invert"
+				decoding="async"
 			/>
 			<h2 class="mb-4 text-3xl leading-relaxed font-bold text-white">
 				{AR_AUTH.brandingTitle}<br />{AR_AUTH.brandingTitleLine2}
@@ -55,9 +59,8 @@
 				<img
 					src="/logo-name.png"
 					alt="NutriCare"
-					class="h-12 object-contain"
-					width="160"
-					height="48"
+					class="h-12 w-auto max-w-[min(240px,75vw)] object-contain"
+					decoding="async"
 				/>
 			</div>
 

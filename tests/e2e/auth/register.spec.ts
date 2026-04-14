@@ -33,7 +33,8 @@ test.describe('Registration page', () => {
 		await page.locator('button').filter({ hasText: 'أخصائي تغذية' }).click();
 		await expect(page.locator('#first_name')).toBeVisible();
 		await page.locator('button[type="submit"]').click();
-		await expect(page.locator('p.text-xs.text-red-600').first()).toBeVisible();
+		// Validation errors appear as paragraph elements containing "مطلوب" (required)
+		await expect(page.locator('p').filter({ hasText: 'مطلوب' }).first()).toBeVisible();
 	});
 
 	test('back button returns to role selection', async ({ page }) => {

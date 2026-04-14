@@ -1,14 +1,16 @@
+# Dependencies
 node_modules
 
-# SvelteKit / Vite
+# SvelteKit / Vite (adapter output at repo root — never commit)
+/build
 .svelte-kit
-build
 .output
 .vercel
 .netlify
 .wrangler
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+.vite
 
 # Caches
 .cache
@@ -27,6 +29,9 @@ test-results
 blob-report
 playwright/.cache
 
+# Load testing (k6 JSON summaries — local only)
+load-tests/results
+
 # Logs
 logs
 *.log
@@ -36,16 +41,27 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Env
+# Env & secrets (never commit real keys)
 .env
 .env.*
 !.env.example
 !.env.test
+*.pem
+*.p12
+*.pfx
+.id_rsa
+*.key
+.sentryclirc
 
-# SQLite
+# SQLite (local DB + WAL/SHM; any common extension)
 *.db
 *.db-wal
 *.db-shm
+*.sqlite
+*.sqlite3
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
 
 # OS
 .DS_Store
@@ -63,6 +79,10 @@ Desktop.ini
 *.swo
 *~
 
-# Local scratch
+# Local tooling / scratch
 tmp
 temp
+*.orig
+
+# Supabase CLI local state (if you use `supabase start` etc.)
+.supabase
