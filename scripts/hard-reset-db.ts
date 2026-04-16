@@ -3,9 +3,7 @@ import { unlink } from 'node:fs/promises';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
-	console.error(
-		'DATABASE_URL is not set. Example: DATABASE_URL=file:local.db npm run db:hard-reset'
-	);
+	console.error('DATABASE_URL is not set. Example: DATABASE_URL=file:/tmp/nutricare.db npm run db:hard-reset');
 	process.exit(1);
 }
 const RESOLVED_DATABASE_URL = DATABASE_URL;

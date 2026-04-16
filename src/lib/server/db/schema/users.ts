@@ -11,7 +11,7 @@ export const users = sqliteTable('users', {
 	createdAt: text('created_at'),
 	updatedAt: text('updated_at'),
 	/** When false, patient accounts cannot use /patient routes until a dietitian activates them. */
-	canAccessPatientApp: integer('can_access_patient_app', { mode: 'boolean' })
-		.notNull()
-		.default(true)
+	canAccessPatientApp: integer('can_access_patient_app', { mode: 'boolean' }).notNull().default(true),
+	/** Updated on every authenticated request; used to compute online/offline presence. */
+	lastSeenAt: text('last_seen_at')
 });

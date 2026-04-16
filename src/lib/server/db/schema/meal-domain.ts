@@ -21,8 +21,8 @@ export const foodItems = sqliteTable(
 		fiber: real('fiber').notNull().default(0),
 		unit: text('unit').notNull().default('g'),
 		portionSize: real('portion_size').notNull().default(100),
-		categoryId: integer('category_id').references(() => foodCategories.id),
-		createdBy: integer('created_by').references(() => users.id),
+		categoryId: integer('category_id').references(() => foodCategories.id, { onDelete: 'set null' }),
+		createdBy: integer('created_by').references(() => users.id, { onDelete: 'set null' }),
 		imageUrl: text('image_url'),
 		fullNutrients: text('full_nutrients'),
 		externalParserFoodJson: text('external_parser_food_json'),
@@ -75,9 +75,7 @@ export const userFoodImports = sqliteTable(
 			.notNull()
 			.references(() => externalFoodCatalog.id, { onDelete: 'cascade' }),
 		foodItemId: integer('food_item_id').references(() => foodItems.id, { onDelete: 'set null' }),
-		importedAt: text('imported_at')
-			.notNull()
-			.default(sql`(datetime('now'))`)
+		importedAt: text('imported_at').notNull().default(sql`(datetime('now'))`)
 	},
 	(t) => [
 		uniqueIndex('user_food_imports_user_catalog_idx').on(t.userId, t.externalFoodId),
@@ -103,13 +101,10 @@ export const recipes = sqliteTable('recipes', {
 	steps: text('steps'),
 	portions: integer('portions').default(1),
 	nutrients: text('nutrients'),
-	categoryId: integer('category_id').references(() => recipeCategories.id),
-	isFavorite: integer('is_favorite', { mode: 'boolean' }).notNull().default(false),
+	categoryId: integer('category_id').references(() => recipeCategories.id, { onDelete: 'set null' }),
 	source: text('source').notNull().default('internal'),
 	imageUrl: text('image_url'),
-	createdAt: text('created_at')
-		.notNull()
-		.default(sql`(datetime('now'))`)
+	createdAt: text('created_at').notNull().default(sql`(datetime('now'))`)
 });
 
 export const recipeIngredients = sqliteTable(
@@ -160,7 +155,7 @@ export const mealPlanSessions = sqliteTable(
 			.references(() => users.id, { onDelete: 'cascade' }),
 		dietitianId: integer('dietitian_id')
 			.notNull()
-			.references(() => users.id),
+			.references(() => users.id, { onDelete: 'restrict' }),
 		startDate: text('start_date').notNull(),
 		endDate: text('end_date').notNull(),
 		status: text('status', { enum: ['draft', 'active', 'completed'] })
@@ -179,29 +174,58 @@ export const mealPlanSessions = sqliteTable(
 	]
 );
 
-export const mealPlans = sqliteTable('meal_plans', {
-	id: integer('id').primaryKey({ autoIncrement: true }),
-	sessionId: integer('session_id')
-		.notNull()
-		.references(() => mealPlanSessions.id, { onDelete: 'cascade' }),
-	planType: text('plan_type', { enum: ['daily', 'weekly'] })
-		.notNull()
-		.default('weekly'),
-	version: integer('version').notNull().default(1),
-	recommendation: text('recommendation'),
-	note: text('note'),
-	builderConfig: text('builder_config')
-});
+export const mealPlanShareLinks = sqliteTable(
+	'meal_plan_share_links',
+	{
+		id: integer('id').primaryKey({ autoIncrement: true }),
+		sessionId: integer('session_id')
+			.notNull()
+			.references(() => mealPlanSessions.id, { onDelete: 'cascade' }),
+		createdBy: integer('created_by')
+			.notNull()
+			.references(() => users.id, { onDelete: 'cascade' }),
+		scope: text('scope', { enum: ['day', 'week'] }).notNull(),
+		anchorDate: text('anchor_date').notNull(),
+		token: text('token').notNull(),
+		expiresAt: text('expires_at').notNull(),
+		createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+		revokedAt: text('revoked_at')
+	},
+	(t) => [
+		uniqueIndex('meal_plan_share_links_token_uidx').on(t.token),
+		index('meal_plan_share_links_session_idx').on(t.sessionId),
+		index('meal_plan_share_links_expiry_idx').on(t.expiresAt)
+	]
+);
 
-export const mealDays = sqliteTable('meal_days', {
-	id: integer('id').primaryKey({ autoIncrement: true }),
-	mealPlanId: integer('meal_plan_id')
-		.notNull()
-		.references(() => mealPlans.id, { onDelete: 'cascade' }),
-	date: text('date'),
-	dayOfWeek: integer('day_of_week'),
-	sortOrder: integer('sort_order').notNull().default(0)
-});
+export const mealPlans = sqliteTable(
+	'meal_plans',
+	{
+		id: integer('id').primaryKey({ autoIncrement: true }),
+		sessionId: integer('session_id')
+			.notNull()
+			.references(() => mealPlanSessions.id, { onDelete: 'cascade' }),
+		planType: text('plan_type', { enum: ['daily', 'weekly'] }).notNull().default('weekly'),
+		version: integer('version').notNull().default(1),
+		recommendation: text('recommendation'),
+		builderConfig: text('builder_config')
+	},
+	(t) => [index('mp_session_idx').on(t.sessionId)]
+);
+
+export const mealDays = sqliteTable(
+	'meal_days',
+	{
+		id: integer('id').primaryKey({ autoIncrement: true }),
+		mealPlanId: integer('meal_plan_id')
+			.notNull()
+			.references(() => mealPlans.id, { onDelete: 'cascade' }),
+		date: text('date'),
+		dayOfWeek: integer('day_of_week'),
+		sortOrder: integer('sort_order').notNull().default(0)
+	},
+	(t) => [index('md_plan_idx').on(t.mealPlanId)]
+);
 
 export const meals = sqliteTable(
 	'meals',
@@ -224,9 +248,9 @@ export const meals = sqliteTable(
 		})
 			.notNull()
 			.default('breakfast'),
-		recipeId: integer('recipe_id').references(() => recipes.id),
-		supplementId: integer('supplement_id').references(() => supplements.id),
-		foodItemId: integer('food_item_id').references(() => foodItems.id),
+		recipeId: integer('recipe_id').references(() => recipes.id, { onDelete: 'set null' }),
+		supplementId: integer('supplement_id').references(() => supplements.id, { onDelete: 'set null' }),
+		foodItemId: integer('food_item_id').references(() => foodItems.id, { onDelete: 'set null' }),
 		aiMealJson: text('ai_meal_json'),
 		preparation: text('preparation'),
 		sortOrder: integer('sort_order').notNull().default(0)
@@ -234,18 +258,22 @@ export const meals = sqliteTable(
 	(t) => [index('meals_day_idx').on(t.mealDayId)]
 );
 
-export const mealTracking = sqliteTable('meal_tracking', {
-	id: integer('id').primaryKey({ autoIncrement: true }),
-	sessionId: integer('session_id')
-		.notNull()
-		.references(() => mealPlanSessions.id, { onDelete: 'cascade' }),
-	mealId: integer('meal_id')
-		.notNull()
-		.references(() => meals.id, { onDelete: 'cascade' }),
-	date: text('date').notNull(),
-	status: text('status', { enum: ['eaten', 'not_eaten', 'skipped'] }).notNull(),
-	replacementNote: text('replacement_note')
-});
+export const mealTracking = sqliteTable(
+	'meal_tracking',
+	{
+		id: integer('id').primaryKey({ autoIncrement: true }),
+		sessionId: integer('session_id')
+			.notNull()
+			.references(() => mealPlanSessions.id, { onDelete: 'cascade' }),
+		mealId: integer('meal_id')
+			.notNull()
+			.references(() => meals.id, { onDelete: 'cascade' }),
+		date: text('date').notNull(),
+		status: text('status', { enum: ['eaten', 'not_eaten', 'skipped'] }).notNull(),
+		replacementNote: text('replacement_note')
+	},
+	(t) => [uniqueIndex('mt_session_meal_date_uidx').on(t.sessionId, t.mealId, t.date)]
+);
 
 export const dailyLogs = sqliteTable(
 	'daily_logs',
@@ -262,12 +290,10 @@ export const dailyLogs = sqliteTable(
 		weight: real('weight'),
 		adherenceScore: real('adherence_score'),
 		completed: integer('completed', { mode: 'boolean' }).notNull().default(false),
-		createdAt: text('created_at')
-			.notNull()
-			.default(sql`(datetime('now'))`)
+		createdAt: text('created_at').notNull().default(sql`(datetime('now'))`)
 	},
 	(t) => [
-		index('dl_session_date_idx').on(t.sessionId, t.date),
+		uniqueIndex('dl_session_date_uidx').on(t.sessionId, t.date),
 		index('dl_client_idx').on(t.clientId)
 	]
 );
@@ -281,7 +307,7 @@ export const patientDiagnoses = sqliteTable(
 			.references(() => users.id, { onDelete: 'cascade' }),
 		dietitianId: integer('dietitian_id')
 			.notNull()
-			.references(() => users.id),
+			.references(() => users.id, { onDelete: 'restrict' }),
 		diagKey: text('diag_key').notNull(),
 		name: text('name').notNull(),
 		code: text('code'),
@@ -289,9 +315,10 @@ export const patientDiagnoses = sqliteTable(
 		diagnosedDate: text('diagnosed_date').notNull(),
 		status: text('status', { enum: ['active', 'resolved', 'managed'] }).notNull(),
 		notes: text('notes').notNull(),
-		createdAt: text('created_at')
-			.notNull()
-			.default(sql`(datetime('now'))`)
+		createdAt: text('created_at').notNull().default(sql`(datetime('now'))`)
 	},
-	(t) => [index('pd_client_idx').on(t.clientId), index('pd_dietitian_idx').on(t.dietitianId)]
+	(t) => [
+		index('pd_client_idx').on(t.clientId),
+		index('pd_dietitian_idx').on(t.dietitianId)
+	]
 );

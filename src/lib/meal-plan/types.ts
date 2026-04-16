@@ -10,6 +10,7 @@ export interface BuilderConfig {
 	planType: 'daily' | 'weekly';
 	diags: DiagId[];
 	excluded: string[];
+	excludedFoodItemIds?: number[];
 	macros: Macros;
 	targetCalories: number;
 	selectedMeals: MealTypeId[];
@@ -20,6 +21,9 @@ export interface BuilderConfig {
 
 export interface AiMealData {
 	name: string;
+	/** Optional hero image (e.g. from AI or future enrichment). */
+	imageUrl?: string | null;
+	/** Each row: macros are totals for `quantity` + `unit` (not per-100g unless quantity is 100 g). */
 	ingredients: Array<{
 		name_ar: string;
 		quantity: number;
@@ -36,6 +40,13 @@ export interface AiMealData {
 export interface PlanSlot {
 	recipeId?: number;
 	supplementId?: number;
+	supplementVolumeMl?: number;
+	supplementOverrides?: {
+		calories?: number;
+		protein?: number;
+		carbs?: number;
+		fat?: number;
+	};
 	foodItemId?: number;
 	aiMeal?: AiMealData;
 }

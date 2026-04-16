@@ -15,7 +15,7 @@ export const memberships = sqliteTable(
 		id: integer('id').primaryKey({ autoIncrement: true }),
 		organizationId: integer('organization_id')
 			.notNull()
-			.references(() => organizations.id),
+			.references(() => organizations.id, { onDelete: 'cascade' }),
 		userId: integer('user_id')
 			.notNull()
 			.references(() => users.id, { onDelete: 'cascade' }),

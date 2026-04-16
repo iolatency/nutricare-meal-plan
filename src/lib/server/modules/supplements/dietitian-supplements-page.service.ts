@@ -6,12 +6,7 @@ import { fail, type ActionFailure } from '@sveltejs/kit';
 export async function loadDietitianSupplementsPage(q: string) {
 	const all =
 		q.length >= 2
-			? db
-					.select()
-					.from(supplements)
-					.where(like(supplements.name, `%${q}%`))
-					.limit(100)
-					.all()
+			? db.select().from(supplements).where(like(supplements.name, `%${q}%`)).limit(100).all()
 			: db.select().from(supplements).limit(100).all();
 	return { supplements: all, q };
 }

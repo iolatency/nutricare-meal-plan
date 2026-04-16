@@ -5,9 +5,8 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
 	plugins: [tailwindcss(), sveltekit()],
 	test: {
-		include: ['src/**/*.test.ts'],
+		include: ['src/**/*.test.ts', 'tests/unit/**/*.test.ts', 'tests/data-integrity/**/*.test.ts', 'tests/security/**/*.test.ts'],
 		environment: 'node',
-		fileParallelism: false,
 		coverage: {
 			provider: 'v8',
 			include: ['src/lib/**'],

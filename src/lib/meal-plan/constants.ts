@@ -83,6 +83,21 @@ export const MEAL_TYPES = [
 
 export type MealTypeId = (typeof MEAL_TYPES)[number]['id'];
 
+export const MEAL_TYPE_EMOJIS: Record<MealTypeId, string> = {
+	breakfast: '🍳',
+	morning_snack: '🍎',
+	lunch: '🍛',
+	afternoon_snack: '🥪',
+	dinner: '🍽️',
+	post_workout: '💪',
+	supplement: '💊'
+};
+
+export function getMealTypeEmoji(mealType: string | null | undefined): string {
+	if (!mealType) return '🍽️';
+	return MEAL_TYPE_EMOJIS[mealType as MealTypeId] ?? '🍽️';
+}
+
 export const TAGS = [
 	'غني بالألياف',
 	'قليل الألياف',
@@ -111,6 +126,38 @@ export const DIET_TYPES = [
 	'كيتو',
 	'داش'
 ];
+
+export const AI_DIET_MODAL_PRESETS = [
+	{
+		id: 'dash_low_sodium',
+		label: 'ضغط / DASH',
+		dietTypes: ['منخفض الصوديوم', 'داش'],
+		stripOnSelect: ['متوسط الصوديوم']
+	},
+	{
+		id: 'high_fiber_anti_inflammatory',
+		label: 'ألياف + مضاد التهاب',
+		dietTypes: ['عالي بالألياف', 'مضاد للالتهابات'],
+		stripOnSelect: ['منخفض بالألياف']
+	},
+	{
+		id: 'low_fodmap_lactose_free',
+		label: 'هضمي',
+		dietTypes: ['منخفض FODMAP', 'خالٍ من اللاكتوز']
+	},
+	{
+		id: 'keto_profile',
+		label: 'كيتو',
+		dietTypes: ['كيتو', 'عالي بالدهون الصحية'],
+		stripOnSelect: ['عالي بالألياف', 'منخفض بالألياف']
+	},
+	{
+		id: 'renal_profile',
+		label: 'كلوي',
+		dietTypes: ['منخفض البوتاسيوم', 'منخفض الفوسفور', 'منخفض الكالسيوم'],
+		stripOnSelect: ['متوسط البوتاسيوم']
+	}
+] as const;
 
 export const MICROS = [
 	{ label: 'فيتامين د', unit: 'IU', per1000: 250, rda: 800, color: '#3cb96b' },

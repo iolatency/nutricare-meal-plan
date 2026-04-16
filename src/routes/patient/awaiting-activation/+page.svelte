@@ -5,25 +5,14 @@
 <div class="wrap" dir="rtl">
 	<div class="card">
 		<div class="icon" aria-hidden="true">
-			<svg
-				width="40"
-				height="40"
-				fill="none"
-				stroke="#2a9d62"
-				stroke-width="1.5"
-				viewBox="0 0 24 24"
-			>
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-				/>
+			<svg width="40" height="40" fill="none" stroke="#2a9d62" stroke-width="1.5" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
 			</svg>
 		</div>
 		<h1 class="title">حسابك قيد المراجعة</h1>
 		<p class="lead">
-			لا يمكن استخدام لوحة المريض حتى يفعّل أخصائي التغذية حسابك ويربطه بعيادته. إذا كان لديك بريد
-			مسجّل لدى أخصائي التغذية، سيقوم بالتفعيل من لوحته.
+			لا يمكن استخدام لوحة المريض حتى يفعّل أخصائي التغذية حسابك ويربطه بعيادته. إذا كان لديك
+			بريد مسجّل لدى أخصائي التغذية، سيقوم بالتفعيل من لوحته.
 		</p>
 		<p class="hint">بعد التفعيل، حدّث الصفحة أو سجّل الخروج ثم الدخول مرة أخرى إذا لزم الأمر.</p>
 		<form method="POST" action="/logout" class="actions">

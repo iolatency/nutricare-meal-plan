@@ -1,6 +1,7 @@
 # Optional Render Blueprint — adjust service name / region as needed.
 # Auto-seed: on first boot with an empty SQLite file, the app runs `scripts/seed.ts` after migrations
-# (dietitian + one patient + meal catalog; see src/lib/server/db/index.ts). No Supabase unless SQLITE_STORAGE_SYNC=1.
+# (dietitian + one patient + meal catalog; see src/lib/server/db/index.ts).
+# SQLite persistence source of truth is Supabase Storage (no local disk fallback).
 services:
   - type: web
     name: nutricare-meal-plan
@@ -10,10 +11,10 @@ services:
     startCommand: npm start
     envVars:
       - key: NODE_VERSION
-        value: '22'
+        value: "22"
       - key: DATABASE_URL
-        value: file:/var/data/nutricare.db
-    disk:
-      name: nutricare-data
-      mountPath: /var/data
-      sizeGB: 1
+        value: file:/tmp/nutricare.db
+      - key: SQLITE_STORAGE_SYNC
+        value: "1"
+      - key: FILE_STORAGE_PROVIDER
+        value: supabase

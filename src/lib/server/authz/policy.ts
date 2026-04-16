@@ -34,8 +34,7 @@ export function requireSessionAccess(
 		.get();
 
 	if (!session) error(404, 'الجلسة غير موجودة');
-	if (session.clientId !== authedUser.id && session.dietitianId !== authedUser.id)
-		error(403, 'غير مصرح');
+	if (session.clientId !== authedUser.id && session.dietitianId !== authedUser.id) error(403, 'غير مصرح');
 
 	return session;
 }

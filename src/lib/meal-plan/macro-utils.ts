@@ -1,7 +1,51 @@
 import type { Macros, PlanGrid, PlanTotals, MealTotals, RecipeNutrients } from './types';
 import { MICROS } from './constants';
 
-export function adjustMacro(changed: 'c' | 'p' | 'f', newValue: number, current: Macros): Macros {
+type SupplementBase = { totalKcal: number; protein: number; carbs: number; fat: number; volumeMl?: number | null };
+type MacroTotals = { calories: number; protein: number; carbs: number; fat: number };
+
+function clampNonNegative(value: number | undefined): number | undefined {
+	if (value === undefined || Number.isNaN(value)) return undefined;
+	return Math.max(0, value);
+}
+
+function resolveSupplementTotals(
+	slot: PlanGrid[string][string],
+	base: SupplementBase
+): MacroTotals {
+	const baseVolume = base.volumeMl && base.volumeMl > 0 ? base.volumeMl : null;
+	const slotVolume = slot.supplementVolumeMl && slot.supplementVolumeMl > 0 ? slot.supplementVolumeMl : null;
+	const volumeRatio = baseVolume && slotVolume ? slotVolume / baseVolume : 1;
+
+	const scaled: MacroTotals = {
+		calories: (base.totalKcal ?? 0) * volumeRatio,
+		protein: (base.protein ?? 0) * volumeRatio,
+		carbs: (base.carbs ?? 0) * volumeRatio,
+		fat: (base.fat ?? 0) * volumeRatio
+	};
+
+	if (slot.supplementOverrides) {
+		return {
+			calories: clampNonNegative(slot.supplementOverrides.calories) ?? 0,
+			protein: clampNonNegative(slot.supplementOverrides.protein) ?? 0,
+			carbs: clampNonNegative(slot.supplementOverrides.carbs) ?? 0,
+			fat: clampNonNegative(slot.supplementOverrides.fat) ?? 0
+		};
+	}
+
+	return {
+		calories: scaled.calories,
+		protein: scaled.protein,
+		carbs: scaled.carbs,
+		fat: scaled.fat
+	};
+}
+
+export function adjustMacro(
+	changed: 'c' | 'p' | 'f',
+	newValue: number,
+	current: Macros
+): Macros {
 	let c = current.c;
 	let p = current.p;
 	let f = current.f;
@@ -51,7 +95,7 @@ export function parseNutrients(json: string | null): RecipeNutrients | null {
 export function computePlanTotals(
 	plan: PlanGrid,
 	recipeLookup: Map<number, RecipeNutrients>,
-	supplementLookup: Map<number, { totalKcal: number; protein: number; carbs: number; fat: number }>,
+	supplementLookup: Map<number, SupplementBase>,
 	foodLookup?: Map<number, { calories: number; protein: number; carbs: number; fat: number }>
 ): { totals: PlanTotals; mealTotals: MealTotals } {
 	const totals: PlanTotals = { calories: 0, protein: 0, carbs: 0, fat: 0 };
@@ -82,14 +126,15 @@ export function computePlanTotals(
 			} else if (slot.supplementId) {
 				const s = supplementLookup.get(slot.supplementId);
 				if (s) {
-					totals.calories += s.totalKcal;
-					totals.protein += s.protein;
-					totals.carbs += s.carbs;
-					totals.fat += s.fat;
-					mealTotals[mealType].calories += s.totalKcal;
-					mealTotals[mealType].protein += s.protein;
-					mealTotals[mealType].carbs += s.carbs;
-					mealTotals[mealType].fat += s.fat;
+					const resolved = resolveSupplementTotals(slot, s);
+					totals.calories += resolved.calories;
+					totals.protein += resolved.protein;
+					totals.carbs += resolved.carbs;
+					totals.fat += resolved.fat;
+					mealTotals[mealType].calories += resolved.calories;
+					mealTotals[mealType].protein += resolved.protein;
+					mealTotals[mealType].carbs += resolved.carbs;
+					mealTotals[mealType].fat += resolved.fat;
 				}
 			} else if (slot.foodItemId && foodLookup) {
 				const f = foodLookup.get(slot.foodItemId);

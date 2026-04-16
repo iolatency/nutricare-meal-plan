@@ -8,6 +8,13 @@ export type SqliteStorageSyncConfig = {
 	objectPath: string;
 };
 
+export class MissingRemoteSqliteError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = 'MissingRemoteSqliteError';
+	}
+}
+
 function normalizeSupabaseUrl(url: string): string {
 	return url.replace(/\/$/, '');
 }
@@ -33,9 +40,7 @@ function authHeaders(serviceRoleKey: string): HeadersInit {
 	};
 }
 
-export function parseSqliteStorageSyncFromEnv(
-	env: Record<string, string | undefined>
-): SqliteStorageSyncConfig | null {
+export function parseSqliteStorageSyncFromEnv(env: Record<string, string | undefined>): SqliteStorageSyncConfig | null {
 	const on =
 		env.SQLITE_STORAGE_SYNC === '1' ||
 		env.SQLITE_STORAGE_SYNC === 'true' ||
@@ -53,25 +58,37 @@ export function parseSqliteStorageSyncFromEnv(
 	return { supabaseUrl, serviceRoleKey, bucket, objectPath };
 }
 
-/** Download remote DB into `absoluteLocalPath` when it exists; no-op on 404. */
+/** Download remote DB into `absoluteLocalPath`. */
 export async function pullSqliteFromSupabaseStorage(
 	cfg: SqliteStorageSyncConfig,
-	absoluteLocalPath: string
-): Promise<void> {
+	absoluteLocalPath: string,
+	options?: { allowMissingRemote?: boolean }
+): Promise<boolean> {
 	mkdirSync(path.dirname(absoluteLocalPath), { recursive: true });
+	const allowMissingRemote = options?.allowMissingRemote === true;
 
 	const url = objectUrl(cfg);
 	const res = await fetch(url, { headers: authHeaders(cfg.serviceRoleKey) });
 	if (res.ok) {
 		const buf = Buffer.from(await res.arrayBuffer());
 		writeFileSync(absoluteLocalPath, buf);
-		return;
+		return true;
 	}
-	if (res.status === 404) return;
+	if (res.status === 404) {
+		if (allowMissingRemote) return false;
+		throw new MissingRemoteSqliteError(
+			`[db] Remote SQLite object is missing at ${cfg.bucket}/${cfg.objectPath}. ` +
+				'Create/upload the object first or set SQLITE_STORAGE_BOOTSTRAP=1 for one-time bootstrap.'
+		);
+	}
 	const errText = await res.text().catch(() => '');
 	// Some Storage routes return 400 + JSON not_found instead of bare 404.
 	if (res.status === 400 && /"error"\s*:\s*"not_found"|Object not found/i.test(errText)) {
-		return;
+		if (allowMissingRemote) return false;
+		throw new MissingRemoteSqliteError(
+			`[db] Remote SQLite object is missing at ${cfg.bucket}/${cfg.objectPath}. ` +
+				'Create/upload the object first or set SQLITE_STORAGE_BOOTSTRAP=1 for one-time bootstrap.'
+		);
 	}
 	throw new Error(`[db] Storage download failed (${res.status}): ${errText.slice(0, 200)}`);
 }

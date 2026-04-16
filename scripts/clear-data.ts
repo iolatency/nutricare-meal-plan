@@ -1,13 +1,13 @@
 /**
  * Clears all data from the database EXCEPT the users table.
- * Run with: DATABASE_URL=file:local.db npm run db:clear
+ * Run with: DATABASE_URL=file:/tmp/nutricare.db npm run db:clear
  */
 import path from 'node:path';
 import Database from 'better-sqlite3';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
-	console.error('DATABASE_URL is not set. Example: DATABASE_URL=file:local.db npm run db:clear');
+	console.error('DATABASE_URL is not set. Example: DATABASE_URL=file:/tmp/nutricare.db npm run db:clear');
 	process.exit(1);
 }
 
@@ -17,7 +17,7 @@ function sqlitePathFromUrl(url: string): string {
 
 const sqlitePath = path.resolve(process.cwd(), sqlitePathFromUrl(DATABASE_URL));
 const client = new Database(sqlitePath);
-client.pragma('journal_mode = WAL');
+client.pragma('journal_mode = DELETE');
 client.pragma('foreign_keys = OFF'); // Disable FK checks during bulk delete
 
 // Delete in child-first order to respect FK constraints

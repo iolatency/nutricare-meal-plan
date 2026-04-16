@@ -9,6 +9,11 @@
 		type ChatSseEvent
 	} from '$lib/features/chat/services/chat-api';
 
+	type OnlineStatus = {
+		online: boolean;
+		lastSeenAt: string | null;
+	};
+
 	type Props = {
 		conversationId: number;
 		currentUserId: number;
@@ -21,6 +26,8 @@
 		onMarkRead?: () => void;
 		/** Shown only on small screens (CSS); e.g. return to conversation list. */
 		onBack?: (() => void) | null;
+		/** Online/offline presence of the peer. When provided, shows a presence dot in the header. */
+		onlineStatus?: OnlineStatus | null;
 	};
 
 	let {
@@ -32,7 +39,8 @@
 		avatarPx = 40,
 		initialMessages,
 		onMarkRead,
-		onBack = null
+		onBack = null,
+		onlineStatus = null
 	}: Props = $props();
 
 	let messages = $state<ChatMessage[]>([]);
@@ -62,7 +70,7 @@
 	});
 
 	function mergeById(prev: ChatMessage[], incoming: ChatMessage[]): ChatMessage[] {
-		const map = new Map<string, ChatMessage>();
+		const map = new Map<number, ChatMessage>();
 		for (const m of prev) map.set(m.id, m);
 		for (const m of incoming) map.set(m.id, m);
 		return Array.from(map.values()).sort((a, b) =>
@@ -116,13 +124,13 @@
 	function formatTime(iso: string): string {
 		const d = new Date(iso);
 		if (Number.isNaN(d.getTime())) return '';
-		return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+		return d.toLocaleTimeString('ar-EG-u-nu-arab', { hour: '2-digit', minute: '2-digit' });
 	}
 
 	function formatDay(iso: string): string {
 		const d = new Date(iso);
 		if (Number.isNaN(d.getTime())) return '';
-		return d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+		return d.toLocaleDateString('ar-EG-u-nu-arab', { weekday: 'long', month: 'short', day: 'numeric' });
 	}
 
 	function dayKey(iso: string): string {
@@ -132,7 +140,9 @@
 	}
 
 	const grouped = $derived.by(() => {
-		type Row = { kind: 'day'; key: string; label: string } | { kind: 'msg'; msg: ChatMessage };
+		type Row =
+			| { kind: 'day'; key: string; label: string }
+			| { kind: 'msg'; msg: ChatMessage };
 		const out: Row[] = [];
 		let lastDay: string | null = null;
 		const asc = [...messages].sort((a, b) => (a.createdAt > b.createdAt ? 1 : -1));
@@ -221,26 +231,15 @@
 		e.preventDefault();
 		void send();
 	}
+
 </script>
 
 <div class="chat-shell" dir="rtl">
 	<div class="chat-head">
 		{#if onBack}
 			<button type="button" class="chat-back-btn" onclick={onBack} aria-label="العودة للمحادثات">
-				<svg
-					width="18"
-					height="18"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
-					aria-hidden="true"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M15 19l-7-7 7-7"
-					/>
+				<svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
 				</svg>
 			</button>
 		{/if}
@@ -277,7 +276,22 @@
 						<span class="chat-title">{title}</span>
 					</div>
 				{/if}
+
+				{#if onlineStatus != null}
+					<span
+						class="presence-dot-chat"
+						class:presence-online={onlineStatus.online}
+						class:presence-offline={!onlineStatus.online}
+						title={onlineStatus.online ? 'متصل الآن' : onlineStatus.lastSeenAt ? `آخر ظهور: ${new Date(onlineStatus.lastSeenAt).toLocaleTimeString('ar-EG-u-nu-arab', { hour: '2-digit', minute: '2-digit' })}` : 'غير متصل'}
+						aria-label={onlineStatus.online ? 'متصل' : 'غير متصل'}
+					></span>
+				{/if}
 			</div>
+			{#if onlineStatus != null}
+				<p class="presence-label-chat">
+					{onlineStatus.online ? 'متصل الآن' : 'غير متصل'}
+				</p>
+			{/if}
 		</div>
 	</div>
 
@@ -440,6 +454,26 @@
 		border: 1px solid var(--fp-line);
 		flex-shrink: 0;
 	}
+	.presence-dot-chat {
+		display: inline-block;
+		width: 9px;
+		height: 9px;
+		border-radius: 50%;
+		flex-shrink: 0;
+		margin-inline-start: 6px;
+		transition: background 0.4s ease;
+		vertical-align: middle;
+	}
+	.presence-dot-chat.presence-online {
+		background: #2a9d62;
+		box-shadow: 0 0 0 2px rgba(42, 157, 98, 0.2);
+	}
+	.presence-dot-chat.presence-offline { background: #b0b8b4; }
+	.presence-label-chat {
+		margin: 2px 0 0;
+		font-size: 10.5px;
+		color: var(--fp-muted);
+	}
 	.chat-title {
 		font-family: var(--font-display);
 		font-weight: 700;
@@ -502,12 +536,7 @@
 		}
 	}
 	.chat-bubble.mine {
-		background: linear-gradient(
-			165deg,
-			#34b16f 0%,
-			var(--fp-accent) 45%,
-			var(--fp-accent-deep) 100%
-		);
+		background: linear-gradient(165deg, #34b16f 0%, var(--fp-accent) 45%, var(--fp-accent-deep) 100%);
 		color: #fff;
 		border-color: rgba(31, 122, 74, 0.45);
 		border-bottom-left-radius: 5px;
@@ -616,12 +645,7 @@
 		padding: 0 22px;
 		border: 1px solid var(--fp-accent-deep);
 		border-radius: 12px;
-		background: linear-gradient(
-			165deg,
-			#34b16f 0%,
-			var(--fp-accent) 45%,
-			var(--fp-accent-deep) 100%
-		);
+		background: linear-gradient(165deg, #34b16f 0%, var(--fp-accent) 45%, var(--fp-accent-deep) 100%);
 		color: #fff;
 		font-weight: 600;
 		font-size: 13.5px;

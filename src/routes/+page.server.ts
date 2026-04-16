@@ -12,8 +12,11 @@ export const load: PageServerLoad = async ({ locals }) => {
 		redirect(302, '/dietitian/recipes');
 	}
 
-	if (locals.user.role === 'patient' && !locals.user.canAccessPatientApp) {
-		redirect(302, '/patient/awaiting-activation');
+	if (locals.user.role === 'patient') {
+		if (!locals.user.canAccessPatientApp) {
+			redirect(302, '/patient/awaiting-activation');
+		}
+		redirect(302, '/patient');
 	}
 
 	return { user: locals.user };

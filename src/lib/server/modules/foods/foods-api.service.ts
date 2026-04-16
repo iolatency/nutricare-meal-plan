@@ -19,8 +19,75 @@ function nutrientsWithLabelsFromFood(f: {
 	return nutrientsWithLabels;
 }
 
+function parseCatalogParserFood(
+	parserFoodJson: string | null
+): {
+	brand: string | null;
+	category: string | null;
+	categoryLabel: string | null;
+	foodContentsLabel: string | null;
+	healthLabels: string[];
+	cautions: string[];
+	dietLabels: string[];
+} {
+	if (!parserFoodJson) {
+		return {
+			brand: null,
+			category: null,
+			categoryLabel: null,
+			foodContentsLabel: null,
+			healthLabels: [],
+			cautions: [],
+			dietLabels: []
+		};
+	}
+	try {
+		const parsed = JSON.parse(parserFoodJson) as Record<string, unknown>;
+		const getList = (key: string) => {
+			const val = parsed[key];
+			return Array.isArray(val) ? val.filter((x): x is string => typeof x === 'string') : [];
+		};
+		return {
+			brand: typeof parsed.brand === 'string' ? parsed.brand : null,
+			category: typeof parsed.category === 'string' ? parsed.category : null,
+			categoryLabel: typeof parsed.categoryLabel === 'string' ? parsed.categoryLabel : null,
+			foodContentsLabel:
+				typeof parsed.foodContentsLabel === 'string' ? parsed.foodContentsLabel : null,
+			healthLabels: getList('healthLabels'),
+			cautions: getList('cautions'),
+			dietLabels: getList('dietLabels')
+		};
+	} catch {
+		return {
+			brand: null,
+			category: null,
+			categoryLabel: null,
+			foodContentsLabel: null,
+			healthLabels: [],
+			cautions: [],
+			dietLabels: []
+		};
+	}
+}
+
+function parseCatalogMeasures(parserMeasuresJson: string | null): { label: string; weight: number }[] {
+	if (!parserMeasuresJson) return [];
+	try {
+		const parsed = JSON.parse(parserMeasuresJson) as Array<Record<string, unknown>>;
+		if (!Array.isArray(parsed)) return [];
+		return parsed
+			.map((m) => ({
+				label: typeof m.label === 'string' ? m.label : '',
+				weight: Number(m.weight) || 0
+			}))
+			.filter((m) => m.label.length > 0);
+	} catch {
+		return [];
+	}
+}
+
 /** Upsert catalog row from Edamam search hint (no user side effects). */
-function upsertCatalogFromSearchHint(h: Awaited<ReturnType<typeof searchEdamam>>[number]) {
+function upsertCatalogFromSearchHint(h: (Awaited<ReturnType<typeof searchEdamam>>)[number]) {
 	const f = h.food;
 	const nut = f.nutrients;
 	const nutrientsWithLabels = nutrientsWithLabelsFromFood({
@@ -101,11 +168,7 @@ export function searchFoodsForApi(params: {
 		return internal;
 	}
 
-	return {
-		internal,
-		needsEdamam: true as const,
-		hintsMax: source === 'edamam' ? maxResults : Math.min(maxResults, 40)
-	};
+	return { internal, needsEdamam: true as const, hintsMax: source === 'edamam' ? maxResults : Math.min(maxResults, 40) };
 }
 
 export async function searchFoodsForApiComplete(params: {
@@ -116,10 +179,36 @@ export async function searchFoodsForApiComplete(params: {
 	maxResults: number;
 	userId: number;
 }) {
+	if (params.q.length < 2) return [];
+
+	const catalogMatches = db
+		.select({
+			food: foodItems
+		})
+		.from(userFoodImports)
+		.innerJoin(externalFoodCatalog, eq(userFoodImports.externalFoodId, externalFoodCatalog.id))
+		.innerJoin(foodItems, eq(userFoodImports.foodItemId, foodItems.id))
+		.where(
+			and(
+				eq(userFoodImports.userId, params.userId),
+				or(
+					like(externalFoodCatalog.name, `%${params.q}%`),
+					like(externalFoodCatalog.nameAr, `%${params.q}%`)
+				),
+				isNotNull(userFoodImports.foodItemId)
+			)!
+		)
+		.limit(20)
+		.all()
+		.map((r) => ({ ...r.food, _source: 'catalog' as const }));
+
+	if (catalogMatches.length > 0) return catalogMatches;
+
 	const partial = searchFoodsForApi(params);
 	if (Array.isArray(partial)) return partial;
 
 	const { internal, hintsMax } = partial;
+
 	const hints = await searchEdamam(params.q, hintsMax);
 	if (hints.length === 0) return internal;
 
@@ -133,10 +222,7 @@ export async function searchFoodsForApiComplete(params: {
 			? db
 					.select({ food: foodItems })
 					.from(userFoodImports)
-					.innerJoin(
-						externalFoodCatalog,
-						eq(userFoodImports.externalFoodId, externalFoodCatalog.id)
-					)
+					.innerJoin(externalFoodCatalog, eq(userFoodImports.externalFoodId, externalFoodCatalog.id))
 					.innerJoin(foodItems, eq(userFoodImports.foodItemId, foodItems.id))
 					.where(
 						and(
@@ -149,9 +235,7 @@ export async function searchFoodsForApiComplete(params: {
 					.map((r) => ({ ...r.food, _source: 'internal' as const }))
 			: [];
 
-	const byExternal = new Map(
-		importedRows.filter((r) => r.externalId).map((r) => [r.externalId!, r])
-	);
+	const byExternal = new Map(importedRows.filter((r) => r.externalId).map((r) => [r.externalId!, r]));
 	const savedEdamam = hints
 		.map((h) => byExternal.get(h.food.foodId))
 		.filter((x): x is NonNullable<typeof x> => x !== undefined);
@@ -191,9 +275,7 @@ export function localSearchFoodsForApi(params: { q: string; ownerOnly: boolean; 
 			id: foodItems.id,
 			name: sql<string>`coalesce(${foodItems.name}, ${externalFoodCatalog.name})`,
 			nameAr: sql<string | null>`coalesce(${foodItems.nameAr}, ${externalFoodCatalog.nameAr})`,
-			imageUrl: sql<
-				string | null
-			>`coalesce(${foodItems.imageUrl}, ${externalFoodCatalog.imageUrl})`,
+			imageUrl: sql<string | null>`coalesce(${foodItems.imageUrl}, ${externalFoodCatalog.imageUrl})`,
 			calories: sql<number>`coalesce(${foodItems.calories}, ${externalFoodCatalog.calories})`,
 			protein: sql<number>`coalesce(${foodItems.protein}, ${externalFoodCatalog.protein})`,
 			carbs: sql<number>`coalesce(${foodItems.carbs}, ${externalFoodCatalog.carbs})`,
@@ -202,26 +284,16 @@ export function localSearchFoodsForApi(params: { q: string; ownerOnly: boolean; 
 			unit: sql<string>`coalesce(${foodItems.unit}, ${externalFoodCatalog.unit})`,
 			portionSize: sql<number>`coalesce(${foodItems.portionSize}, ${externalFoodCatalog.portionSize})`,
 			source: sql<string>`'edamam'`,
-			fullNutrients: sql<
-				string | null
-			>`coalesce(${foodItems.fullNutrients}, ${externalFoodCatalog.fullNutrients})`,
+			fullNutrients: sql<string | null>`coalesce(${foodItems.fullNutrients}, ${externalFoodCatalog.fullNutrients})`,
 			createdBy: sql<number | null>`${userId}`,
-			externalParserFoodJson: sql<
-				string | null
-			>`coalesce(${foodItems.externalParserFoodJson}, ${externalFoodCatalog.externalParserFoodJson})`,
-			externalParserMeasuresJson: sql<
-				string | null
-			>`coalesce(${foodItems.externalParserMeasuresJson}, ${externalFoodCatalog.externalParserMeasuresJson})`,
-			externalNutrientsJson: sql<
-				string | null
-			>`coalesce(${foodItems.externalNutrientsJson}, ${externalFoodCatalog.externalNutrientsJson})`
+			externalParserFoodJson: sql<string | null>`coalesce(${foodItems.externalParserFoodJson}, ${externalFoodCatalog.externalParserFoodJson})`,
+			externalParserMeasuresJson: sql<string | null>`coalesce(${foodItems.externalParserMeasuresJson}, ${externalFoodCatalog.externalParserMeasuresJson})`,
+			externalNutrientsJson: sql<string | null>`coalesce(${foodItems.externalNutrientsJson}, ${externalFoodCatalog.externalNutrientsJson})`
 		})
 		.from(userFoodImports)
 		.innerJoin(externalFoodCatalog, eq(userFoodImports.externalFoodId, externalFoodCatalog.id))
 		.innerJoin(foodItems, eq(userFoodImports.foodItemId, foodItems.id))
-		.where(
-			and(eq(userFoodImports.userId, userId), nameMatch, isNotNull(userFoodImports.foodItemId))!
-		)
+		.where(and(eq(userFoodImports.userId, userId), nameMatch, isNotNull(userFoodImports.foodItemId))!)
 		.limit(30)
 		.all();
 }
@@ -276,8 +348,7 @@ export async function importFoodFromEdamam(params: {
 	for (const [val, field] of nutrientsToCheck) {
 		const n = val ?? 0;
 		if (n < 0) return { ok: false, status: 400, message: `${field} cannot be negative` };
-		if (n > 10_000)
-			return { ok: false, status: 400, message: `${field} value is unreasonably high` };
+		if (n > 10_000) return { ok: false, status: 400, message: `${field} value is unreasonably high` };
 	}
 
 	let nutrientsJson: string | null = null;
@@ -333,21 +404,14 @@ export async function importFoodFromEdamam(params: {
 	const catalogRow = db
 		.select({ id: externalFoodCatalog.id })
 		.from(externalFoodCatalog)
-		.where(
-			and(
-				eq(externalFoodCatalog.provider, PROVIDER_EDAMAM),
-				eq(externalFoodCatalog.providerFoodId, foodId)
-			)
-		)
+		.where(and(eq(externalFoodCatalog.provider, PROVIDER_EDAMAM), eq(externalFoodCatalog.providerFoodId, foodId)))
 		.get();
 	if (!catalogRow) return { ok: false, status: 500, message: 'Failed to resolve catalog row' };
 
 	const existingImport = db
 		.select()
 		.from(userFoodImports)
-		.where(
-			and(eq(userFoodImports.userId, userId), eq(userFoodImports.externalFoodId, catalogRow.id))
-		)
+		.where(and(eq(userFoodImports.userId, userId), eq(userFoodImports.externalFoodId, catalogRow.id)))
 		.get();
 
 	if (existingImport?.foodItemId) {
@@ -497,17 +561,12 @@ export type ExternalCatalogNutrientsPayload = {
  */
 export async function enrichExternalCatalogNutrientsForApi(
 	foodId: string
-): Promise<
-	{ ok: true; data: ExternalCatalogNutrientsPayload } | { ok: false; status: 404; message: string }
-> {
+): Promise<{ ok: true; data: ExternalCatalogNutrientsPayload } | { ok: false; status: 404; message: string }> {
 	const row = db
 		.select()
 		.from(externalFoodCatalog)
 		.where(
-			and(
-				eq(externalFoodCatalog.provider, PROVIDER_EDAMAM),
-				eq(externalFoodCatalog.providerFoodId, foodId)
-			)!
+			and(eq(externalFoodCatalog.provider, PROVIDER_EDAMAM), eq(externalFoodCatalog.providerFoodId, foodId))!
 		)
 		.get();
 	if (!row) return { ok: false, status: 404, message: 'Catalog row not found' };
@@ -577,6 +636,70 @@ export async function externalSearchFoodsForApi(params: { q: string; userId: num
 	const { q, userId } = params;
 	if (q.length < 2) return [];
 
+	const catalogRows = db
+		.select()
+		.from(externalFoodCatalog)
+		.where(
+			and(
+				eq(externalFoodCatalog.provider, PROVIDER_EDAMAM),
+				or(
+					like(externalFoodCatalog.name, `%${q}%`),
+					like(externalFoodCatalog.nameAr, `%${q}%`)
+				)
+			)!
+		)
+		.limit(50)
+		.all();
+
+	if (catalogRows.length > 0) {
+		const catalogIds = catalogRows.map((r) => r.id);
+		const importLinks =
+			catalogIds.length > 0
+				? db
+						.select({
+							externalFoodId: userFoodImports.externalFoodId,
+							foodItemId: userFoodImports.foodItemId
+						})
+						.from(userFoodImports)
+						.where(
+							and(
+								eq(userFoodImports.userId, userId),
+								inArray(userFoodImports.externalFoodId, catalogIds),
+								isNotNull(userFoodImports.foodItemId)
+							)!
+						)
+						.all()
+				: [];
+
+		const importMap = new Map(importLinks.map((l) => [l.externalFoodId, l.foodItemId as number]));
+
+		return catalogRows.map((row) => {
+			const parserFood = parseCatalogParserFood(row.externalParserFoodJson);
+			return {
+				foodId: row.providerFoodId,
+				label: row.name,
+				knownAs: row.nameAr,
+				brand: parserFood.brand,
+				category: parserFood.category,
+				categoryLabel: parserFood.categoryLabel,
+				foodContentsLabel: parserFood.foodContentsLabel,
+				image: row.imageUrl,
+				calories: row.calories,
+				protein: row.protein,
+				carbs: row.carbs,
+				fat: row.fat,
+				fiber: row.fiber,
+				fullNutrients: row.fullNutrients,
+				healthLabels: parserFood.healthLabels,
+				cautions: parserFood.cautions,
+				dietLabels: parserFood.dietLabels,
+				measures: parseCatalogMeasures(row.externalParserMeasuresJson),
+				alreadyImported: importMap.has(row.id),
+				dbId: importMap.get(row.id) ?? null
+			};
+		});
+	}
+
 	const hints = await searchEdamam(q, 50);
 	if (hints.length === 0) return [];
 
@@ -593,10 +716,7 @@ export async function externalSearchFoodsForApi(params: { q: string; userId: num
 						foodItemId: userFoodImports.foodItemId
 					})
 					.from(userFoodImports)
-					.innerJoin(
-						externalFoodCatalog,
-						eq(userFoodImports.externalFoodId, externalFoodCatalog.id)
-					)
+					.innerJoin(externalFoodCatalog, eq(userFoodImports.externalFoodId, externalFoodCatalog.id))
 					.where(
 						and(
 							eq(userFoodImports.userId, userId),
@@ -611,20 +731,17 @@ export async function externalSearchFoodsForApi(params: { q: string; userId: num
 		importLinks.map((l) => [l.providerFoodId, l.foodItemId] as [string, number])
 	);
 
-	const catalogRows =
+	const apiCatalogRows =
 		foodIds.length > 0
 			? db
 					.select()
 					.from(externalFoodCatalog)
 					.where(
-						and(
-							eq(externalFoodCatalog.provider, PROVIDER_EDAMAM),
-							inArray(externalFoodCatalog.providerFoodId, foodIds)
-						)!
+						and(eq(externalFoodCatalog.provider, PROVIDER_EDAMAM), inArray(externalFoodCatalog.providerFoodId, foodIds))!
 					)
 					.all()
 			: [];
-	const catalogByFoodId = new Map(catalogRows.map((c) => [c.providerFoodId, c]));
+	const catalogByFoodId = new Map(apiCatalogRows.map((c) => [c.providerFoodId, c]));
 
 	return hints.map((h) => {
 		const f = h.food;

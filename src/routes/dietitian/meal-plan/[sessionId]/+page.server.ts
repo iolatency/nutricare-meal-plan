@@ -3,7 +3,9 @@ import {
 	loadMealPlanBuilderPage,
 	actionCreateDiagnosis,
 	actionUpdateDiagnosis,
-	actionSavePlan
+	actionSavePlan,
+	actionPublishPlan,
+	actionClearMeals
 } from '$lib/server/modules/meal-plan/meal-plan-builder.service';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
@@ -30,5 +32,16 @@ export const actions: Actions = {
 		const dietitianId = locals.user!.id;
 		const formData = await request.formData();
 		return actionSavePlan({ sessionId, dietitianId, formData });
+	},
+	publishPlan: async ({ params, locals }) => {
+		const sessionId = parseInt(params.sessionId);
+		const dietitianId = locals.user!.id;
+		return actionPublishPlan({ sessionId, dietitianId });
+	},
+	clearMeals: async ({ request, params, locals }) => {
+		const sessionId = parseInt(params.sessionId);
+		const dietitianId = locals.user!.id;
+		const formData = await request.formData();
+		return actionClearMeals({ sessionId, dietitianId, formData });
 	}
 };

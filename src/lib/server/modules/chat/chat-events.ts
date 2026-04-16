@@ -5,7 +5,7 @@ type ChatSsePayload =
 	| {
 			type: 'message.created';
 			message: {
-				id: string;
+				id: number;
 				conversationId: number;
 				senderUserId: number;
 				body: string;

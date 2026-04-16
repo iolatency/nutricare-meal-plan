@@ -38,11 +38,7 @@ export function listSupplements(query: string, limit: number, offset: number) {
 }
 
 export function createSupplement(payload: unknown) {
-	const [created] = db
-		.insert(supplements)
-		.values(payload as typeof supplements.$inferInsert)
-		.returning()
-		.all();
+	const [created] = db.insert(supplements).values(payload as typeof supplements.$inferInsert).returning().all();
 	return created;
 }
 

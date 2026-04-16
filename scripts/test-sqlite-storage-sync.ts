@@ -5,9 +5,9 @@
  *   SQLITE_STORAGE_SYNC=1 SQLITE_STORAGE_BUCKET=media SQLITE_STORAGE_OBJECT_PATH=nutricare.sqlite \
  *     node --env-file=.env --import tsx scripts/test-sqlite-storage-sync.ts
  *
- * Uses ./local.db as upload payload if it exists; otherwise a tiny placeholder file.
+ * Uses DATABASE_URL file path as upload payload if it exists; otherwise a tiny placeholder file.
  */
-import { copyFileSync, existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {
@@ -35,23 +35,21 @@ const tmpDir = mkdtempSync(path.join(os.tmpdir(), 'nutricare-storage-test-'));
 const pulledPath = path.join(tmpDir, 'pulled.db');
 
 console.log('[test] Pull from Storage →', pulledPath);
-await pullSqliteFromSupabaseStorage(cfg, pulledPath);
+await pullSqliteFromSupabaseStorage(cfg, pulledPath, { allowMissingRemote: true });
 const pulledSize = existsSync(pulledPath) ? readFileSync(pulledPath).length : 0;
-console.log(
-	'[test] Pull result:',
-	pulledSize > 0 ? `file written (${pulledSize} bytes)` : 'no remote object (404) — skipped write'
-);
+console.log('[test] Pull result:', pulledSize > 0 ? `file written (${pulledSize} bytes)` : 'no remote object (404) — skipped write');
 
-const sourceForPush = path.join(root, 'local.db');
+const databaseUrl = process.env.DATABASE_URL ?? 'file:/tmp/nutricare.db';
+const sourceForPush = path.resolve(root, databaseUrl.replace(/^file:/, ''));
 let payloadPath: string;
 if (existsSync(sourceForPush)) {
 	payloadPath = path.join(tmpDir, 'push.db');
 	copyFileSync(sourceForPush, payloadPath);
-	console.log('[test] Push payload: copy of local.db →', payloadPath);
+	console.log('[test] Push payload: copy of DATABASE_URL file →', payloadPath);
 } else {
 	payloadPath = path.join(tmpDir, 'tiny.db');
 	writeFileSync(payloadPath, Buffer.from('SQLite format 3\x00'));
-	console.log('[test] Push payload: minimal placeholder (no local.db)');
+	console.log('[test] Push payload: minimal placeholder (DATABASE_URL file not found)');
 }
 
 console.log('[test] Push to Storage (upsert)…');
@@ -60,7 +58,7 @@ console.log('[test] Push OK.');
 
 console.log('[test] Pull again to confirm round-trip…');
 const roundTrip = path.join(tmpDir, 'roundtrip.db');
-await pullSqliteFromSupabaseStorage(cfg, roundTrip);
+await pullSqliteFromSupabaseStorage(cfg, roundTrip, { allowMissingRemote: true });
 const rt = existsSync(roundTrip) ? readFileSync(roundTrip).length : 0;
 console.log('[test] Round-trip file size:', rt, 'bytes');
 

@@ -1,5 +1,5 @@
 import { db } from '$lib/server/db';
-import { users, memberships, mealPlanSessions } from '$lib/server/db/schema';
+import { users, memberships, mealPlanSessions, mealPlans } from '$lib/server/db/schema';
 import { eq, and, desc, inArray } from 'drizzle-orm';
 import { fail, redirect, type ActionFailure } from '@sveltejs/kit';
 import Database from 'better-sqlite3';
@@ -63,12 +63,7 @@ export async function loadDietitianMealPlanListPage(dietitianId: number) {
 			startDate: mealPlanSessions.startDate
 		})
 		.from(mealPlanSessions)
-		.where(
-			and(
-				inArray(mealPlanSessions.clientId, patientUserIds),
-				eq(mealPlanSessions.dietitianId, dietitianId)
-			)
-		)
+		.where(and(inArray(mealPlanSessions.clientId, patientUserIds), eq(mealPlanSessions.dietitianId, dietitianId)))
 		.orderBy(desc(mealPlanSessions.id))
 		.all() as SessionListRow[];
 
@@ -85,10 +80,32 @@ export async function loadDietitianMealPlanListPage(dietitianId: number) {
 		const sorted = [...rows].sort((a, b) => b.id - a.id);
 		const lastTouchSession = working || !sorted.length ? null : { startDate: sorted[0].startDate };
 
+		const touchSessionId = working?.id ?? sorted[0]?.id ?? null;
+		let lastEditedAt: string | null = null;
+		if (touchSessionId) {
+			const latestPlan = db
+				.select({ builderConfig: mealPlans.builderConfig })
+				.from(mealPlans)
+				.where(eq(mealPlans.sessionId, touchSessionId))
+				.orderBy(desc(mealPlans.id))
+				.limit(1)
+				.get();
+			if (latestPlan?.builderConfig) {
+				try {
+					const cfg = JSON.parse(latestPlan.builderConfig) as { lastEditedAt?: unknown };
+					lastEditedAt = typeof cfg.lastEditedAt === 'string' ? cfg.lastEditedAt : null;
+				} catch {
+					lastEditedAt = null;
+				}
+			}
+		}
+
 		return {
 			...user,
-			latestSession: working,
-			lastTouchSession
+			latestSession: working ? { ...working, lastUpdatedAt: lastEditedAt ?? working.startDate } : null,
+			lastTouchSession: lastTouchSession
+				? { ...lastTouchSession, lastUpdatedAt: lastEditedAt ?? lastTouchSession.startDate }
+				: null
 		};
 	});
 
@@ -116,12 +133,7 @@ export async function actionCreateMealPlanSession(params: {
 	const clientMembership = db
 		.select({ roles: memberships.roles })
 		.from(memberships)
-		.where(
-			and(
-				eq(memberships.userId, clientId),
-				eq(memberships.organizationId, dietitianMembership.orgId)
-			)
-		)
+		.where(and(eq(memberships.userId, clientId), eq(memberships.organizationId, dietitianMembership.orgId)))
 		.get();
 
 	if (!clientMembership) {
@@ -167,7 +179,9 @@ export async function actionCreateMealPlanSession(params: {
 	redirect(302, `/dietitian/meal-plan/${targetSessionId}`);
 }
 
-export type ActivatePatientResult = { ok: true; message: string } | { ok: false; error: string };
+export type ActivatePatientResult =
+	| { ok: true; message: string }
+	| { ok: false; error: string };
 
 /**
  * Activates a patient account by email: grants app access and attaches them to the dietitian's organization

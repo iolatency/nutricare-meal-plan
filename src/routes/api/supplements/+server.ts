@@ -17,19 +17,6 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
 export const POST: RequestHandler = async ({ request, locals }) => {
 	requireRole(locals.user, 'dietitian');
-	let body: unknown;
-	try {
-		body = await request.json();
-	} catch {
-		return json({ error: 'Invalid JSON body' }, { status: 400 });
-	}
-	if (
-		!body ||
-		typeof body !== 'object' ||
-		!('name' in body) ||
-		!String((body as Record<string, unknown>).name ?? '').trim()
-	) {
-		return json({ error: 'name is required' }, { status: 400 });
-	}
+	const body = await request.json();
 	return json(createSupplement(body));
 };

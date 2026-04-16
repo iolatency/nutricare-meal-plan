@@ -6,14 +6,21 @@ import { deleteExpiredSessions } from '$lib/server/modules/auth/session.reposito
 export const handle: Handle = async ({ event, resolve }) => {
 	event.locals.user = await getUserFromCookie(event);
 
-	// Probabilistic cleanup of expired sessions (~1% of requests)
 	if (Math.random() < 0.01) {
 		deleteExpiredSessions().catch(() => {});
 	}
 
 	const response = await resolve(event);
-	await flushSqliteToSupabaseStorage().catch((err) =>
-		console.error('[db] Supabase Storage upload failed:', err)
-	);
+
+	const isAiRoute = event.url.pathname.includes('/api/ai/meal-plan');
+	if (isAiRoute) {
+		flushSqliteToSupabaseStorage().catch((err) =>
+			console.error('[db] Supabase Storage upload failed:', err)
+		);
+	} else {
+		await flushSqliteToSupabaseStorage().catch((err) =>
+			console.error('[db] Supabase Storage upload failed:', err)
+		);
+	}
 	return response;
 };

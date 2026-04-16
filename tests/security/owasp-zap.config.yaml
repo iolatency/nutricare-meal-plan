@@ -1,0 +1,75 @@
+# OWASP ZAP — Automated Security Scan Configuration
+# Usage:
+#   docker run -v $(pwd):/zap/wrk/:rw -t zaproxy/zap-stable \
+#     zap-baseline.py -t http://localhost:3000 -c /zap/wrk/tests/security/owasp-zap.config.yaml
+
+env:
+  contexts:
+    - name: "NutriCare Patient/Dietitian App"
+      urls:
+        - "http://localhost:3000"
+      includePaths:
+        - "http://localhost:3000/.*"
+      excludePaths:
+        - "http://localhost:3000/api/ai/.*"        # Exclude AI calls (expensive)
+        - "http://localhost:3000/api/foods/external.*" # Exclude external proxy calls
+      authentication:
+        method: form
+        loginUrl: "http://localhost:3000/login"
+        loginRequestData: "identifier={%username%}&password={%password%}"
+        usernameField: "identifier"
+        passwordField: "password"
+      users:
+        - name: "dev-patient"
+          credentials:
+            username: "patient@test.local"
+            password: "password123"
+        - name: "dev-dietitian"
+          credentials:
+            username: "dev@example.com"
+            password: "password"
+
+parameters:
+  failOnError: false
+  failOnWarning: false
+  progressToStdout: true
+
+jobs:
+  - type: passiveScan-config
+    parameters:
+      maxAlertsPerRule: 10
+      scanOnlyInScope: true
+
+  - type: spider
+    parameters:
+      context: "NutriCare Patient/Dietitian App"
+      user: "dev-dietitian"
+      maxDuration: 10
+      maxDepth: 5
+      acceptCookies: true
+
+  - type: spider
+    parameters:
+      context: "NutriCare Patient/Dietitian App"
+      user: "dev-patient"
+      maxDuration: 10
+      maxDepth: 5
+      acceptCookies: true
+
+  - type: passiveScan-wait
+    parameters:
+      maxDuration: 10
+
+  - type: activeScan
+    parameters:
+      context: "NutriCare Patient/Dietitian App"
+      policy: "API-Minimal-Example"
+      maxDuration: 30
+
+  - type: report
+    parameters:
+      template: "traditional-html"
+      reportDir: "/zap/wrk/tests/security/reports"
+      reportFile: "owasp-zap-report"
+      reportTitle: "NutriCare Security Scan"
+      reportDescription: "OWASP ZAP automated security scan results"

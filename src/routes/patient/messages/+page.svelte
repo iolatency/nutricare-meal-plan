@@ -7,9 +7,31 @@
 
 	const peerName = $derived.by(() => {
 		const u = data.conversation?.dietitianUser;
-		if (!u) return 'أخصائي التغذية';
+		if (!u) return data.dietitianName ?? 'أخصائي التغذية';
 		const n = (u.name ?? '').trim();
 		return n || u.phone || 'أخصائي التغذية';
+	});
+
+	// Presence polling
+	let onlineStatus = $state<{ online: boolean; lastSeenAt: string | null } | null>(null);
+
+	async function pollPresence() {
+		if (!data.dietitianId) return;
+		try {
+			const res = await fetch(`/api/users/${data.dietitianId}/presence`);
+			if (res.ok) {
+				const body = await res.json();
+				onlineStatus = { online: body.online ?? false, lastSeenAt: body.lastSeenAt ?? null };
+			}
+		} catch {
+			// ignore
+		}
+	}
+
+	$effect(() => {
+		pollPresence();
+		const interval = setInterval(pollPresence, 30_000);
+		return () => clearInterval(interval);
 	});
 </script>
 
@@ -21,108 +43,76 @@
 	/>
 </svelte:head>
 
-<div class="page" dir="rtl">
+<div class="chat-page" dir="rtl">
 	{#if data.chatError}
 		<div class="err-box">
 			<p class="err-title">تعذر فتح الرسائل</p>
 			<p class="err-msg">{data.chatError}</p>
 			<p class="err-hint">تحتاج إلى خطة غذائية نشطة أو مسودة مع أخصائي مرتبط بحسابك.</p>
-			<a class="back" href="/">العودة للرئيسية</a>
+			<a class="back" href="/patient">العودة للرئيسية</a>
 		</div>
 	{:else if data.conversation && data.user}
-		<div class="page-header">
-			<div>
-				<h1 class="page-title">الرسائل</h1>
-				<p class="page-subtitle">محادثتك مع <strong>{peerName}</strong></p>
-			</div>
-		</div>
 		<ChatShell
 			conversationId={data.conversation.id}
 			currentUserId={data.user.id}
 			title={peerName}
 			initialMessages={data.initialMessages}
 			onMarkRead={() => invalidateAll()}
+			onlineStatus={onlineStatus}
 		/>
 	{/if}
 </div>
 
 <style>
-	.page {
+	.chat-page {
 		--fp-ink: #121816;
 		--fp-muted: #5c6560;
 		--fp-line: #e2e8e4;
 		--fp-surface: #ffffff;
 		--fp-accent: #2a9d62;
-		--font-display: 'El Messiri', 'Tajawal', serif;
 
-		max-width: 720px;
-		margin: 0 auto;
-		padding: 28px 20px 40px;
-		font-family: 'Tajawal', sans-serif;
-		animation: pt-msg-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
-	}
-	@keyframes pt-msg-in {
-		from {
-			opacity: 0;
-			transform: translateY(8px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
-	}
-	.page-header {
-		margin-bottom: 22px;
-	}
-	.page-title {
-		font-family: var(--font-display);
-		font-size: clamp(1.5rem, 4vw, 1.85rem);
-		font-weight: 700;
-		color: var(--fp-ink);
-		margin: 0 0 8px;
-		line-height: 1.15;
-	}
-	.page-subtitle {
+		display: flex;
+		flex-direction: column;
+		max-width: none;
+		padding: 0;
 		margin: 0;
-		font-size: 13.5px;
-		color: var(--fp-muted);
-		line-height: 1.5;
+		font-family: 'Tajawal', sans-serif;
 	}
-	.page-subtitle strong {
-		font-weight: 800;
-		color: var(--fp-accent);
+
+	/* Mobile: fill the space between the top bar and bottom nav, edge-to-edge */
+	@media (max-width: 899px) {
+		.chat-page {
+			height: calc(
+				100dvh
+				- 56px - env(safe-area-inset-top, 0px)
+				- 76px - env(safe-area-inset-bottom, 0px)
+			);
+			margin-inline: -12px;
+		}
 	}
+
+	/* Desktop: constrain width nicely */
+	@media (min-width: 900px) {
+		.chat-page {
+			max-width: 820px;
+			margin: 0 auto;
+			height: calc(100dvh - 48px);
+			padding: 12px 0;
+		}
+	}
+
 	.err-box {
 		background: var(--fp-surface);
 		border: 1px solid var(--fp-line);
 		border-radius: 16px;
 		padding: 28px 20px;
+		margin: 28px 20px;
 		text-align: center;
 		box-shadow: 0 4px 24px rgba(18, 24, 22, 0.04);
 	}
-	.err-title {
-		margin: 0 0 8px;
-		font-weight: 700;
-		font-size: 17px;
-	}
-	.err-msg {
-		margin: 0 0 12px;
-		color: var(--fp-muted);
-		font-size: 14px;
-	}
-	.err-hint {
-		margin: 0 0 20px;
-		font-size: 13px;
-		color: var(--fp-muted);
-		opacity: 0.92;
-	}
-	.back {
-		display: inline-block;
-		color: #2a9d62;
-		font-weight: 600;
-		text-decoration: none;
-	}
-	.back:hover {
-		text-decoration: underline;
-	}
+	.err-title { margin: 0 0 8px; font-weight: 700; font-size: 17px; }
+	.err-msg { margin: 0 0 12px; color: var(--fp-muted); font-size: 14px; }
+	.err-hint { margin: 0 0 20px; font-size: 13px; color: var(--fp-muted); opacity: 0.92; }
+	.back { display: inline-block; color: #2a9d62; font-weight: 600; text-decoration: none; }
+	.back:hover { text-decoration: underline; }
 </style>

@@ -1,81 +1,70 @@
 import { describe, it, expect } from 'vitest';
-import {
-	adjustMacro,
-	macroGrams,
-	parseNutrients,
-	computePlanTotals,
-	estimateMicros
-} from './macro-utils';
-import type { Macros, PlanGrid } from './types';
-
-// ─── adjustMacro ────────────────────────────────────────────────────────────
+import { adjustMacro, macroGrams, parseNutrients, computePlanTotals, estimateMicros } from './macro-utils';
+import type { PlanGrid, RecipeNutrients } from './types';
 
 describe('adjustMacro', () => {
-	const base: Macros = { c: 50, p: 30, f: 20 };
-
-	it('keeps total at 100 when changing carbs', () => {
-		const result = adjustMacro('c', 40, base);
+	it('adjusts carbs and redistributes protein/fat proportionally', () => {
+		const result = adjustMacro('c', 60, { c: 50, p: 30, f: 20 });
+		expect(result.c).toBe(60);
 		expect(result.c + result.p + result.f).toBe(100);
 	});
 
-	it('keeps total at 100 when changing protein', () => {
-		const result = adjustMacro('p', 40, base);
+	it('adjusts protein and redistributes carbs/fat proportionally', () => {
+		const result = adjustMacro('p', 40, { c: 50, p: 30, f: 20 });
+		expect(result.p).toBe(40);
 		expect(result.c + result.p + result.f).toBe(100);
 	});
 
-	it('keeps total at 100 when changing fat', () => {
-		const result = adjustMacro('f', 10, base);
+	it('adjusts fat and redistributes carbs/protein proportionally', () => {
+		const result = adjustMacro('f', 30, { c: 50, p: 30, f: 20 });
+		expect(result.f).toBe(30);
 		expect(result.c + result.p + result.f).toBe(100);
 	});
 
-	it('sets the changed macro to the exact new value', () => {
-		expect(adjustMacro('c', 60, base).c).toBe(60);
-		expect(adjustMacro('p', 20, base).p).toBe(20);
-		expect(adjustMacro('f', 15, base).f).toBe(15);
+	it('handles setting one macro to 100 (others become 0)', () => {
+		const result = adjustMacro('c', 100, { c: 50, p: 30, f: 20 });
+		expect(result).toEqual({ c: 100, p: 0, f: 0 });
 	});
 
-	it('never produces negative macro values', () => {
-		const result = adjustMacro('c', 100, base);
+	it('handles setting one macro to 0', () => {
+		const result = adjustMacro('c', 0, { c: 50, p: 30, f: 20 });
+		expect(result.c).toBe(0);
+		expect(result.p + result.f).toBe(100);
+	});
+
+	it('never returns negative values', () => {
+		const result = adjustMacro('c', 99, { c: 1, p: 0, f: 0 });
+		expect(result.c).toBeGreaterThanOrEqual(0);
 		expect(result.p).toBeGreaterThanOrEqual(0);
 		expect(result.f).toBeGreaterThanOrEqual(0);
 	});
 
-	it('handles equal base proportions correctly', () => {
-		const equal: Macros = { c: 33, p: 33, f: 34 };
-		const result = adjustMacro('c', 50, equal);
+	it('handles all-zero remaining gracefully (division by zero guard)', () => {
+		const result = adjustMacro('c', 50, { c: 100, p: 0, f: 0 });
+		expect(result.c).toBe(50);
 		expect(result.c + result.p + result.f).toBe(100);
 	});
 
-	it('handles zero-sum edge case without division by zero', () => {
-		const edge: Macros = { c: 100, p: 0, f: 0 };
-		const result = adjustMacro('p', 20, edge);
-		expect(result.c + result.p + result.f).toBe(100);
+	it('preserves sum of 100 across many adjustments', () => {
+		let macros = { c: 33, p: 33, f: 34 };
+		macros = adjustMacro('c', 50, macros);
+		macros = adjustMacro('p', 25, macros);
+		macros = adjustMacro('f', 25, macros);
+		expect(macros.c + macros.p + macros.f).toBe(100);
 	});
 });
 
-// ─── macroGrams ─────────────────────────────────────────────────────────────
-
 describe('macroGrams', () => {
-	it('returns zeros when calories is 0', () => {
+	it('calculates gram values from calories and macro percentages', () => {
+		const result = macroGrams(2000, { c: 50, p: 30, f: 20 });
+		expect(result.carbG).toBe(250); // 2000 * 0.5 / 4
+		expect(result.protG).toBe(150); // 2000 * 0.3 / 4
+		expect(result.fatG).toBe(44);   // 2000 * 0.2 / 9
+	});
+
+	it('returns all zeros when calories is 0', () => {
 		const result = macroGrams(0, { c: 50, p: 30, f: 20 });
 		expect(result).toEqual({ carbG: 0, protG: 0, fatG: 0 });
-	});
-
-	it('correctly converts 2000 kcal with 50/30/20 split', () => {
-		const result = macroGrams(2000, { c: 50, p: 30, f: 20 });
-		// carbs: 2000 * 50% / 4 = 250g
-		expect(result.carbG).toBe(250);
-		// protein: 2000 * 30% / 4 = 150g
-		expect(result.protG).toBe(150);
-		// fat: 2000 * 20% / 9 ≈ 44g
-		expect(result.fatG).toBe(44);
-	});
-
-	it('uses 4 kcal/g for carbs and protein, 9 kcal/g for fat', () => {
-		const result = macroGrams(1800, { c: 40, p: 40, f: 20 });
-		expect(result.carbG).toBe(Math.round((1800 * 40) / 100 / 4));
-		expect(result.protG).toBe(Math.round((1800 * 40) / 100 / 4));
-		expect(result.fatG).toBe(Math.round((1800 * 20) / 100 / 9));
 	});
 
 	it('rounds to nearest integer', () => {
@@ -84,134 +73,134 @@ describe('macroGrams', () => {
 		expect(Number.isInteger(result.protG)).toBe(true);
 		expect(Number.isInteger(result.fatG)).toBe(true);
 	});
-});
 
-// ─── parseNutrients ─────────────────────────────────────────────────────────
+	it('handles 100% of a single macro', () => {
+		const result = macroGrams(2000, { c: 100, p: 0, f: 0 });
+		expect(result.carbG).toBe(500);
+		expect(result.protG).toBe(0);
+		expect(result.fatG).toBe(0);
+	});
+});
 
 describe('parseNutrients', () => {
 	it('returns null for null input', () => {
 		expect(parseNutrients(null)).toBeNull();
 	});
 
-	it('returns null for invalid JSON', () => {
-		expect(parseNutrients('not json')).toBeNull();
-	});
-
-	it('parses valid JSON', () => {
-		const json = JSON.stringify({ calories: 300, protein: 20, carbs: 40, fat: 10 });
+	it('returns parsed object for valid JSON', () => {
+		const json = JSON.stringify({ calories: 200, protein: 10, carbs: 30, fat: 5 });
 		const result = parseNutrients(json);
-		expect(result).not.toBeNull();
-		expect(result?.calories).toBe(300);
-		expect(result?.protein).toBe(20);
+		expect(result).toEqual({ calories: 200, protein: 10, carbs: 30, fat: 5 });
 	});
 
-	it('handles partial nutrient data', () => {
-		const result = parseNutrients(JSON.stringify({ calories: 150 }));
-		expect(result?.calories).toBe(150);
-		expect(result?.protein).toBeUndefined();
+	it('returns null for invalid JSON', () => {
+		expect(parseNutrients('not-json')).toBeNull();
+	});
+
+	it('returns null for empty string', () => {
+		expect(parseNutrients('')).toBeNull();
 	});
 });
 
-// ─── computePlanTotals ──────────────────────────────────────────────────────
-
 describe('computePlanTotals', () => {
-	const emptyGrid: PlanGrid = {};
-
-	it('returns all-zero totals for an empty plan', () => {
-		const { totals } = computePlanTotals(emptyGrid, new Map(), new Map());
+	it('returns zeros for empty plan', () => {
+		const { totals, mealTotals } = computePlanTotals({}, new Map(), new Map());
 		expect(totals).toEqual({ calories: 0, protein: 0, carbs: 0, fat: 0 });
+		expect(Object.keys(mealTotals)).toHaveLength(0);
 	});
 
-	it('sums recipe nutrients across meals', () => {
-		const grid: PlanGrid = {
-			'2025-01-01': {
+	it('accumulates recipe nutrients correctly', () => {
+		const plan: PlanGrid = {
+			'2024-01-01': {
 				breakfast: { recipeId: 1 },
 				lunch: { recipeId: 2 }
 			}
 		};
-		const recipeLookup = new Map([
-			[1, { calories: 400, protein: 30, carbs: 50, fat: 10 }],
-			[2, { calories: 600, protein: 40, carbs: 70, fat: 15 }]
+		const recipeLookup = new Map<number, RecipeNutrients>([
+			[1, { calories: 300, protein: 20, carbs: 40, fat: 10 }],
+			[2, { calories: 500, protein: 30, carbs: 60, fat: 15 }]
 		]);
-		const { totals } = computePlanTotals(grid, recipeLookup, new Map());
-		expect(totals.calories).toBe(1000);
-		expect(totals.protein).toBe(70);
-		expect(totals.carbs).toBe(120);
+		const { totals, mealTotals } = computePlanTotals(plan, recipeLookup, new Map());
+		expect(totals.calories).toBe(800);
+		expect(totals.protein).toBe(50);
+		expect(totals.carbs).toBe(100);
 		expect(totals.fat).toBe(25);
+		expect(mealTotals['breakfast'].calories).toBe(300);
+		expect(mealTotals['lunch'].calories).toBe(500);
 	});
 
-	it('sums supplement nutrients', () => {
-		const grid: PlanGrid = {
-			'2025-01-01': {
-				supplement: { supplementId: 10 }
-			}
+	it('accumulates supplement nutrients correctly', () => {
+		const plan: PlanGrid = {
+			'2024-01-01': { supplement: { supplementId: 1 } }
 		};
-		const supplementLookup = new Map([[10, { totalKcal: 200, protein: 15, carbs: 25, fat: 5 }]]);
-		const { totals } = computePlanTotals(grid, new Map(), supplementLookup);
+		const supplementLookup = new Map([
+			[1, { totalKcal: 150, protein: 25, carbs: 5, fat: 3 }]
+		]);
+		const { totals } = computePlanTotals(plan, new Map(), supplementLookup);
+		expect(totals.calories).toBe(150);
+		expect(totals.protein).toBe(25);
+	});
+
+	it('accumulates food item nutrients when foodLookup is provided', () => {
+		const plan: PlanGrid = {
+			'2024-01-01': { breakfast: { foodItemId: 10 } }
+		};
+		const foodLookup = new Map([
+			[10, { calories: 200, protein: 8, carbs: 30, fat: 7 }]
+		]);
+		const { totals } = computePlanTotals(plan, new Map(), new Map(), foodLookup);
 		expect(totals.calories).toBe(200);
-		expect(totals.protein).toBe(15);
 	});
 
-	it('sums food item nutrients when foodLookup provided', () => {
-		const grid: PlanGrid = {
-			'2025-01-01': {
-				lunch: { foodItemId: 5 }
-			}
-		};
-		const foodLookup = new Map([[5, { calories: 350, protein: 25, carbs: 45, fat: 8 }]]);
-		const { totals } = computePlanTotals(grid, new Map(), new Map(), foodLookup);
-		expect(totals.calories).toBe(350);
-	});
-
-	it('sums aiMeal totals', () => {
-		const grid: PlanGrid = {
-			'2025-01-01': {
-				dinner: {
+	it('accumulates AI meal totals', () => {
+		const plan: PlanGrid = {
+			'2024-01-01': {
+				breakfast: {
 					aiMeal: {
-						name: 'AI Meal',
+						name: 'test',
 						ingredients: [],
-						steps: '',
-						total: { calories: 500, protein: 35, carbs: 60, fat: 12 }
+						total: { calories: 400, protein: 20, carbs: 50, fat: 12 },
+						steps: ''
 					}
 				}
 			}
 		};
-		const { totals } = computePlanTotals(grid, new Map(), new Map());
-		expect(totals.calories).toBe(500);
-		expect(totals.protein).toBe(35);
+		const { totals } = computePlanTotals(plan, new Map(), new Map());
+		expect(totals.calories).toBe(400);
+		expect(totals.protein).toBe(20);
 	});
 
-	it('ignores missing recipe IDs not in lookup', () => {
-		const grid: PlanGrid = {
-			'2025-01-01': { breakfast: { recipeId: 999 } }
+	it('skips recipes not in the lookup', () => {
+		const plan: PlanGrid = {
+			'2024-01-01': { breakfast: { recipeId: 999 } }
 		};
-		const { totals } = computePlanTotals(grid, new Map(), new Map());
+		const { totals } = computePlanTotals(plan, new Map(), new Map());
 		expect(totals.calories).toBe(0);
 	});
 
-	it('accumulates per-meal totals correctly', () => {
-		const grid: PlanGrid = {
-			'2025-01-01': {
-				breakfast: { recipeId: 1 },
-				lunch: { recipeId: 1 }
-			}
+	it('aggregates across multiple days', () => {
+		const plan: PlanGrid = {
+			'2024-01-01': { breakfast: { recipeId: 1 } },
+			'2024-01-02': { breakfast: { recipeId: 1 } }
 		};
-		const recipeLookup = new Map([[1, { calories: 300, protein: 20, carbs: 40, fat: 8 }]]);
-		const { mealTotals } = computePlanTotals(grid, recipeLookup, new Map());
-		expect(mealTotals['breakfast']?.calories).toBe(300);
-		expect(mealTotals['lunch']?.calories).toBe(300);
+		const recipeLookup = new Map<number, RecipeNutrients>([
+			[1, { calories: 300, protein: 20, carbs: 40, fat: 10 }]
+		]);
+		const { totals } = computePlanTotals(plan, recipeLookup, new Map());
+		expect(totals.calories).toBe(600);
 	});
 });
 
-// ─── estimateMicros ─────────────────────────────────────────────────────────
-
 describe('estimateMicros', () => {
-	it('returns one entry per micro constant', () => {
+	it('returns array of micro estimates', () => {
 		const result = estimateMicros(2000);
 		expect(result.length).toBeGreaterThan(0);
+		expect(result[0]).toHaveProperty('label');
+		expect(result[0]).toHaveProperty('val');
+		expect(result[0]).toHaveProperty('pct');
 	});
 
-	it('returns zero values when calories is 0', () => {
+	it('returns all zeros for 0 calories', () => {
 		const result = estimateMicros(0);
 		for (const micro of result) {
 			expect(micro.val).toBe(0);
@@ -219,29 +208,16 @@ describe('estimateMicros', () => {
 		}
 	});
 
-	it('caps percentage at 100', () => {
-		// Very high calories will push some micros above RDA
+	it('caps pct at 100', () => {
 		const result = estimateMicros(100_000);
 		for (const micro of result) {
-			if (micro.rda) {
-				expect(micro.pct).toBeLessThanOrEqual(100);
-			}
+			expect(micro.pct).toBeLessThanOrEqual(100);
 		}
 	});
 
-	it('returns non-zero values for typical calorie intake', () => {
-		const result = estimateMicros(2000);
-		const nonZeroCount = result.filter((m) => m.val > 0).length;
-		expect(nonZeroCount).toBeGreaterThan(0);
-	});
-
-	it('every entry has label, unit, val, pct fields', () => {
-		const result = estimateMicros(1500);
-		for (const micro of result) {
-			expect(micro).toHaveProperty('label');
-			expect(micro).toHaveProperty('unit');
-			expect(micro).toHaveProperty('val');
-			expect(micro).toHaveProperty('pct');
-		}
+	it('scales linearly with calories', () => {
+		const at1000 = estimateMicros(1000);
+		const at2000 = estimateMicros(2000);
+		expect(at2000[0].val).toBeGreaterThan(at1000[0].val);
 	});
 });

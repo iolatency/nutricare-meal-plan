@@ -1,214 +1,216 @@
 import { describe, it, expect } from 'vitest';
-import { getLimitsForTags, checkExclusions, checkRestrictions, validatePlan } from './validation';
-import type { Macros, PlanGrid } from './types';
-
-// ─── getLimitsForTags ────────────────────────────────────────────────────────
+import {
+	getLimitsForTags,
+	checkExclusions,
+	checkRestrictions,
+	validatePlan,
+	type NutrientLimit,
+	type ExclusionWarning,
+	type RestrictionWarning
+} from './validation';
+import type { PlanGrid, Macros } from './types';
 
 describe('getLimitsForTags', () => {
-	it('returns empty array when no tags match', () => {
-		expect(getLimitsForTags([], [])).toEqual([]);
-		expect(getLimitsForTags(['unknown tag'], [])).toEqual([]);
+	it('returns empty array for unknown tags', () => {
+		expect(getLimitsForTags(['unknown-tag'], [])).toEqual([]);
 	});
 
-	it('returns sodium limit for low-sodium tag', () => {
-		const limits = getLimitsForTags(['منخفض الصوديوم'], []);
+	it('returns sodium limit for "منخفض الصوديوم"', () => {
+		const limits = getLimitsForTags([], ['منخفض الصوديوم']);
 		expect(limits).toHaveLength(1);
-		expect(limits[0]?.nutrient).toBe('sodium');
-		expect(limits[0]?.maxMg).toBe(1500);
+		expect(limits[0].nutrient).toBe('sodium');
+		expect(limits[0].maxMg).toBe(1500);
 	});
 
-	it('deduplicates the same nutrient from overlapping tags', () => {
-		// Both 'منخفض الصوديوم' and 'قليل الصوديوم' target sodium
-		const limits = getLimitsForTags(['منخفض الصوديوم', 'قليل الصوديوم'], []);
-		const sodiumEntries = limits.filter((l) => l.nutrient === 'sodium');
-		expect(sodiumEntries).toHaveLength(1);
+	it('returns potassium limit for "منخفض البوتاسيوم"', () => {
+		const limits = getLimitsForTags([], ['منخفض البوتاسيوم']);
+		expect(limits).toHaveLength(1);
+		expect(limits[0].nutrient).toBe('potassium');
+		expect(limits[0].maxMg).toBe(2000);
 	});
 
-	it('combines tags and dietTypes', () => {
-		const limits = getLimitsForTags(['منخفض الصوديوم'], ['منخفض البوتاسيوم']);
+	it('deduplicates nutrients from overlapping tags', () => {
+		const limits = getLimitsForTags(['قليل الصوديوم'], ['منخفض الصوديوم']);
+		expect(limits).toHaveLength(1);
+	});
+
+	it('returns multiple limits for multiple matching tags', () => {
+		const limits = getLimitsForTags([], ['منخفض الصوديوم', 'منخفض البوتاسيوم']);
+		expect(limits).toHaveLength(2);
 		const nutrients = limits.map((l) => l.nutrient);
 		expect(nutrients).toContain('sodium');
 		expect(nutrients).toContain('potassium');
 	});
 
-	it('uses a negative maxMg sentinel for minimum fiber', () => {
+	it('handles tags from both arrays', () => {
+		const limits = getLimitsForTags(['غني بالألياف'], ['منخفض الفوسفور']);
+		expect(limits).toHaveLength(2);
+	});
+
+	it('returns negative maxMg for minimum-threshold fiber tags', () => {
 		const limits = getLimitsForTags(['غني بالألياف'], []);
-		const fiberLimit = limits.find((l) => l.nutrient === 'fiber');
-		expect(fiberLimit).toBeDefined();
-		expect(fiberLimit!.maxMg).toBeLessThan(0);
+		expect(limits).toHaveLength(1);
+		expect(limits[0].maxMg).toBeLessThan(0);
+	});
+
+	it('returns empty for empty input arrays', () => {
+		expect(getLimitsForTags([], [])).toEqual([]);
 	});
 });
-
-// ─── checkExclusions ────────────────────────────────────────────────────────
 
 describe('checkExclusions', () => {
-	it('returns empty array when no excluded foods specified', () => {
-		const grid: PlanGrid = {
-			'2025-01-01': { lunch: { recipeId: 1 } }
-		};
-		const recipeMap = new Map([[1, ['chicken', 'rice']]]);
-		expect(checkExclusions(grid, [], recipeMap)).toEqual([]);
+	const makeGrid = (slots: Array<{ dateKey: string; mealType: string; recipeId: number }>): PlanGrid => {
+		const grid: PlanGrid = {};
+		for (const s of slots) {
+			if (!grid[s.dateKey]) grid[s.dateKey] = {};
+			grid[s.dateKey][s.mealType] = { recipeId: s.recipeId };
+		}
+		return grid;
+	};
+
+	it('returns empty when no excluded foods', () => {
+		const grid = makeGrid([{ dateKey: '2024-01-01', mealType: 'breakfast', recipeId: 1 }]);
+		const ingredientMap = new Map([[1, ['ملح', 'أرز']]]);
+		expect(checkExclusions(grid, [], ingredientMap, new Map())).toEqual([]);
 	});
 
-	it('returns empty array when no plan slots have recipeId', () => {
-		const grid: PlanGrid = {
-			'2025-01-01': { lunch: { supplementId: 5 } }
-		};
-		const result = checkExclusions(grid, ['nuts'], new Map());
-		expect(result).toEqual([]);
+	it('returns empty when no slots have recipeId', () => {
+		const grid: PlanGrid = { '2024-01-01': { breakfast: {} } };
+		expect(checkExclusions(grid, [1], new Map(), new Map([[1, 'طماطم']]))).toEqual([]);
 	});
 
-	it('detects an excluded ingredient in a recipe', () => {
-		const grid: PlanGrid = {
-			'2025-01-01': { breakfast: { recipeId: 2 } }
-		};
-		const recipeMap = new Map([[2, ['oats', 'nuts', 'honey']]]);
-		const warnings = checkExclusions(grid, ['مكسرات', 'nuts'], recipeMap);
-		expect(warnings.length).toBeGreaterThan(0);
-		expect(warnings[0]?.recipeId).toBe(2);
+	it('detects excluded ingredient in a recipe', () => {
+		const grid = makeGrid([{ dateKey: '2024-01-01', mealType: 'lunch', recipeId: 1 }]);
+		const ingredientMap = new Map([[1, ['طماطم مهروسة', 'بصل']]]);
+		const warnings = checkExclusions(grid, [1], ingredientMap, new Map([[1, 'طماطم']]));
+		expect(warnings).toHaveLength(1);
+		expect(warnings[0].matchedExclusions).toContain('طماطم');
+		expect(warnings[0].dateKey).toBe('2024-01-01');
+		expect(warnings[0].mealType).toBe('lunch');
 	});
 
-	it('is case-insensitive in matching', () => {
-		const grid: PlanGrid = {
-			'2025-01-01': { dinner: { recipeId: 3 } }
-		};
-		const recipeMap = new Map([[3, ['Milk', 'flour']]]);
-		const warnings = checkExclusions(grid, ['milk'], recipeMap);
-		expect(warnings.length).toBeGreaterThan(0);
+	it('deduplicates matched exclusions for a single recipe', () => {
+		const grid = makeGrid([{ dateKey: '2024-01-01', mealType: 'lunch', recipeId: 1 }]);
+		const ingredientMap = new Map([[1, ['بيض مسلوق', 'بيض مقلي']]]);
+		const warnings = checkExclusions(grid, [5], ingredientMap, new Map([[5, 'بيض']]));
+		expect(warnings).toHaveLength(1);
+		expect(warnings[0].matchedExclusions).toHaveLength(1);
 	});
 
-	it('does not flag recipes without excluded ingredients', () => {
-		const grid: PlanGrid = {
-			'2025-01-01': { lunch: { recipeId: 4 } }
-		};
-		const recipeMap = new Map([[4, ['rice', 'chicken', 'vegetables']]]);
-		const warnings = checkExclusions(grid, ['nuts', 'eggs'], recipeMap);
-		expect(warnings).toEqual([]);
+	it('case-insensitive matching works for English ingredient names', () => {
+		const grid = makeGrid([{ dateKey: '2024-01-01', mealType: 'breakfast', recipeId: 1 }]);
+		const ingredientMap = new Map([[1, ['Eggs', 'Milk']]]);
+		const warnings = checkExclusions(grid, [3], ingredientMap, new Map([[3, 'eggs']]));
+		expect(warnings).toHaveLength(1);
 	});
 
-	it('skips recipe IDs not in the lookup map', () => {
-		const grid: PlanGrid = {
-			'2025-01-01': { lunch: { recipeId: 999 } }
-		};
-		const warnings = checkExclusions(grid, ['nuts'], new Map());
-		expect(warnings).toEqual([]);
+	it('returns warnings from multiple days and meals', () => {
+		const grid = makeGrid([
+			{ dateKey: '2024-01-01', mealType: 'breakfast', recipeId: 1 },
+			{ dateKey: '2024-01-02', mealType: 'lunch', recipeId: 2 }
+		]);
+		const ingredientMap = new Map([
+			[1, ['بيض']],
+			[2, ['بيض مخفوق']]
+		]);
+		const warnings = checkExclusions(grid, [2], ingredientMap, new Map([[2, 'بيض']]));
+		expect(warnings).toHaveLength(2);
 	});
 
-	it('includes dateKey and mealType in each warning', () => {
-		const grid: PlanGrid = {
-			'2025-02-15': { breakfast: { recipeId: 5 } }
-		};
-		const recipeMap = new Map([[5, ['eggs']]]);
-		const warnings = checkExclusions(grid, ['eggs'], recipeMap);
-		expect(warnings[0]?.dateKey).toBe('2025-02-15');
-		expect(warnings[0]?.mealType).toBe('breakfast');
+	it('skips recipes not found in ingredient map', () => {
+		const grid = makeGrid([{ dateKey: '2024-01-01', mealType: 'breakfast', recipeId: 999 }]);
+		const ingredientMap = new Map([[1, ['بيض']]]);
+		expect(checkExclusions(grid, [1], ingredientMap, new Map([[1, 'بيض']]))).toEqual([]);
 	});
 });
 
-// ─── checkRestrictions ──────────────────────────────────────────────────────
-
 describe('checkRestrictions', () => {
-	it('returns empty array when no limits provided', () => {
-		expect(checkRestrictions([], {}, 2000)).toEqual([]);
+	it('returns empty when no limits defined', () => {
+		expect(checkRestrictions([], { sodium: 5000 }, 2000)).toEqual([]);
 	});
 
-	it('flags sodium over the limit', () => {
-		const limits = getLimitsForTags(['منخفض الصوديوم'], []);
+	it('warns when nutrient exceeds maximum', () => {
+		const limits: NutrientLimit[] = [{ nutrient: 'sodium', label: 'صوديوم', maxMg: 1500, unit: 'mg' }];
 		const warnings = checkRestrictions(limits, { sodium: 2000 }, 2000);
-		expect(warnings.length).toBeGreaterThan(0);
-		expect(warnings[0]?.nutrient).toBe('sodium');
-		expect(warnings[0]?.isMinimum).toBe(false);
+		expect(warnings).toHaveLength(1);
+		expect(warnings[0].isMinimum).toBe(false);
+		expect(warnings[0].actual).toBe(2000);
+		expect(warnings[0].limit).toBe(1500);
 	});
 
-	it('does not flag sodium within the limit', () => {
-		const limits = getLimitsForTags(['منخفض الصوديوم'], []);
-		const warnings = checkRestrictions(limits, { sodium: 1000 }, 2000);
-		expect(warnings).toEqual([]);
+	it('no warning when nutrient is under maximum', () => {
+		const limits: NutrientLimit[] = [{ nutrient: 'sodium', label: 'صوديوم', maxMg: 1500, unit: 'mg' }];
+		expect(checkRestrictions(limits, { sodium: 1000 }, 2000)).toEqual([]);
 	});
 
-	it('flags fiber below minimum for high-fiber tag', () => {
-		const limits = getLimitsForTags(['غني بالألياف'], []);
-		// fiber minimum is 25g; actual fiber is 10g
+	it('warns when minimum fiber threshold is not met (negative maxMg)', () => {
+		const limits: NutrientLimit[] = [{ nutrient: 'fiber', label: 'ألياف', maxMg: -25000, unit: 'mg' }];
 		const warnings = checkRestrictions(limits, { fiber: 10 }, 2000);
-		expect(warnings.length).toBeGreaterThan(0);
-		expect(warnings[0]?.isMinimum).toBe(true);
+		expect(warnings).toHaveLength(1);
+		expect(warnings[0].isMinimum).toBe(true);
 	});
 
-	it('does not flag fiber when above minimum', () => {
-		const limits = getLimitsForTags(['غني بالألياف'], []);
-		const warnings = checkRestrictions(limits, { fiber: 30 }, 2000);
-		expect(warnings).toEqual([]);
+	it('no warning when fiber exceeds minimum threshold', () => {
+		const limits: NutrientLimit[] = [{ nutrient: 'fiber', label: 'ألياف', maxMg: -25000, unit: 'mg' }];
+		expect(checkRestrictions(limits, { fiber: 30 }, 2000)).toEqual([]);
 	});
 
-	it('treats missing nutrient value as 0', () => {
-		const limits = getLimitsForTags(['منخفض الصوديوم'], []);
-		// No sodium key in supplementTotals → treated as 0, should not flag
+	it('handles missing nutrient (defaults to 0)', () => {
+		const limits: NutrientLimit[] = [{ nutrient: 'calcium', label: 'كالسيوم', maxMg: 600, unit: 'mg' }];
 		const warnings = checkRestrictions(limits, {}, 2000);
 		expect(warnings).toEqual([]);
 	});
-});
 
-// ─── validatePlan ────────────────────────────────────────────────────────────
+	it('checks multiple limits simultaneously', () => {
+		const limits: NutrientLimit[] = [
+			{ nutrient: 'sodium', label: 'صوديوم', maxMg: 1500, unit: 'mg' },
+			{ nutrient: 'potassium', label: 'بوتاسيوم', maxMg: 2000, unit: 'mg' }
+		];
+		const warnings = checkRestrictions(limits, { sodium: 2000, potassium: 3000 }, 2000);
+		expect(warnings).toHaveLength(2);
+	});
+});
 
 describe('validatePlan', () => {
 	const emptyGrid: PlanGrid = {};
 	const validMacros: Macros = { c: 50, p: 30, f: 20 };
-	const invalidMacros: Macros = { c: 50, p: 30, f: 25 }; // sums to 105
+	const invalidMacros: Macros = { c: 50, p: 30, f: 30 };
 
-	it('returns pass status for empty plan with valid macros', () => {
-		const result = validatePlan(emptyGrid, [], [], [], validMacros, new Map(), {}, 0);
+	it('returns pass for valid plan with no warnings', () => {
+		const result = validatePlan(emptyGrid, [], [], [], validMacros, new Map(), new Map(), {}, 2000);
 		expect(result.status).toBe('pass');
-		expect(result.macroValid).toBe(true);
 		expect(result.exclusionWarnings).toHaveLength(0);
 		expect(result.restrictionWarnings).toHaveLength(0);
+		expect(result.macroValid).toBe(true);
 	});
 
-	it('returns warn status when macros do not sum to 100', () => {
-		const result = validatePlan(emptyGrid, [], [], [], invalidMacros, new Map(), {}, 0);
+	it('returns warn when macros do not sum to 100', () => {
+		const result = validatePlan(emptyGrid, [], [], [], invalidMacros, new Map(), new Map(), {}, 2000);
 		expect(result.status).toBe('warn');
 		expect(result.macroValid).toBe(false);
 	});
 
-	it('returns fail status when exclusion violations exist', () => {
-		const grid: PlanGrid = {
-			'2025-01-01': { lunch: { recipeId: 1 } }
-		};
-		const recipeMap = new Map([[1, ['eggs']]]);
-		const result = validatePlan(grid, ['eggs'], [], [], validMacros, recipeMap, {}, 1500);
+	it('returns fail when exclusion warnings exist', () => {
+		const grid: PlanGrid = { '2024-01-01': { breakfast: { recipeId: 1 } } };
+		const ingredientMap = new Map([[1, ['بيض']]]);
+		const result = validatePlan(grid, [1], [], [], validMacros, ingredientMap, new Map([[1, 'بيض']]), {}, 2000);
 		expect(result.status).toBe('fail');
 		expect(result.exclusionWarnings.length).toBeGreaterThan(0);
 	});
 
-	it('returns warn status when restriction violated but no exclusions', () => {
+	it('returns warn for restriction warnings without exclusion issues', () => {
 		const result = validatePlan(
-			emptyGrid,
-			[],
-			['منخفض الصوديوم'],
-			[],
-			validMacros,
-			new Map(),
-			{ sodium: 3000 },
-			2000
+			emptyGrid, [], [], ['منخفض الصوديوم'], validMacros, new Map(), new Map(), { sodium: 5000 }, 2000
 		);
 		expect(result.status).toBe('warn');
 		expect(result.restrictionWarnings.length).toBeGreaterThan(0);
 	});
 
-	it('fail takes precedence over warn', () => {
-		const grid: PlanGrid = {
-			'2025-01-01': { lunch: { recipeId: 1 } }
-		};
-		const recipeMap = new Map([[1, ['eggs']]]);
-		// Both an exclusion violation AND sodium over limit
+	it('exclusion warnings take priority over restriction warnings (fail > warn)', () => {
+		const grid: PlanGrid = { '2024-01-01': { breakfast: { recipeId: 1 } } };
+		const ingredientMap = new Map([[1, ['بيض']]]);
 		const result = validatePlan(
-			grid,
-			['eggs'],
-			['منخفض الصوديوم'],
-			[],
-			validMacros,
-			recipeMap,
-			{ sodium: 3000 },
-			2000
+			grid, [1], [], ['منخفض الصوديوم'], validMacros, ingredientMap, new Map([[1, 'بيض']]), { sodium: 5000 }, 2000
 		);
 		expect(result.status).toBe('fail');
 	});

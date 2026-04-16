@@ -3,9 +3,7 @@ import Database from 'better-sqlite3';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
-	console.error(
-		'DATABASE_URL is not set. Example: DATABASE_URL=file:local.db npm run db:verify-seed'
-	);
+	console.error('DATABASE_URL is not set. Example: DATABASE_URL=file:/tmp/nutricare.db npm run db:verify-seed');
 	process.exit(1);
 }
 
@@ -18,10 +16,7 @@ const db = new Database(sqlitePath, { readonly: true });
 
 type CountRow = { count: number };
 const count = (table: string) =>
-	Number(
-		(db.prepare(`SELECT COUNT(*) as count FROM "${table}"`).get() as CountRow | undefined)?.count ??
-			0
-	);
+	Number((db.prepare(`SELECT COUNT(*) as count FROM "${table}"`).get() as CountRow | undefined)?.count ?? 0);
 
 const failures: string[] = [];
 const notes: string[] = [];
@@ -56,9 +51,7 @@ try {
 	for (const row of bySource) notes.push(`food_items.${row.source}: ${row.count}`);
 
 	const externalWithOwner = db
-		.prepare(
-			`SELECT COUNT(*) as count FROM food_items WHERE source = 'edamam' AND created_by IS NOT NULL`
-		)
+		.prepare(`SELECT COUNT(*) as count FROM food_items WHERE source = 'edamam' AND created_by IS NOT NULL`)
 		.get() as CountRow;
 	notes.push(`external(edamam) rows owned by users: ${externalWithOwner.count}`);
 
@@ -76,11 +69,8 @@ try {
 		notes.push(`food_categories has ${categoriesCount} rows (allowed but not seeded by default).`);
 	}
 
-	const fkViolations = db.prepare(`PRAGMA foreign_key_check`).all() as Array<
-		Record<string, unknown>
-	>;
-	if (fkViolations.length > 0)
-		failures.push(`Foreign key violations detected: ${fkViolations.length}`);
+	const fkViolations = db.prepare(`PRAGMA foreign_key_check`).all() as Array<Record<string, unknown>>;
+	if (fkViolations.length > 0) failures.push(`Foreign key violations detected: ${fkViolations.length}`);
 
 	const diagCount = count('patient_diagnoses');
 	const sessionCount = count('meal_plan_sessions');

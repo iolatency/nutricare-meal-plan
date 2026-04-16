@@ -1,4 +1,4 @@
-import type { Macros, PlanGrid } from './types';
+import type { Macros, PlanGrid, PlanSlot, RecipeNutrients } from './types';
 
 /* ─── Diet-tag → nutrient threshold rules ─── */
 
@@ -20,7 +20,7 @@ const TAG_LIMITS: Record<string, NutrientLimit[]> = {
 	'عالي بالألياف': [{ nutrient: 'fiber', label: 'ألياف (حد أدنى)', maxMg: -25000, unit: 'mg' }],
 	'قليل الألياف': [{ nutrient: 'fiber', label: 'ألياف', maxMg: 10000, unit: 'mg' }],
 	'منخفض بالألياف': [{ nutrient: 'fiber', label: 'ألياف', maxMg: 10000, unit: 'mg' }],
-	'منخفض الكالسيوم': [{ nutrient: 'calcium', label: 'كالسيوم', maxMg: 600, unit: 'mg' }]
+	'منخفض الكالسيوم': [{ nutrient: 'calcium', label: 'كالسيوم', maxMg: 600, unit: 'mg' }],
 };
 
 export function getLimitsForTags(tags: string[], dietTypes: string[]): NutrientLimit[] {
@@ -52,9 +52,15 @@ export interface ExclusionWarning {
 
 export function checkExclusions(
 	plan: PlanGrid,
-	excludedFoods: string[],
-	recipeIngredientNames: Map<number, string[]>
+	excludedFoodItemIds: number[],
+	recipeIngredientNames: Map<number, string[]>,
+	foodNamesById: Map<number, string>
 ): ExclusionWarning[] {
+	if (!excludedFoodItemIds.length) return [];
+
+	const excludedFoods = excludedFoodItemIds
+		.map((id) => foodNamesById.get(id))
+		.filter((name): name is string => typeof name === 'string' && name.trim().length > 0);
 	if (!excludedFoods.length) return [];
 
 	const warnings: ExclusionWarning[] = [];
@@ -103,14 +109,8 @@ export interface RestrictionWarning {
 
 export function checkRestrictions(
 	limits: NutrientLimit[],
-	supplementTotals: {
-		sodium?: number;
-		potassium?: number;
-		phosphorus?: number;
-		calcium?: number;
-		fiber?: number;
-	},
-	_planCalories: number
+	supplementTotals: { sodium?: number; potassium?: number; phosphorus?: number; calcium?: number; fiber?: number },
+	planCalories: number
 ): RestrictionWarning[] {
 	const warnings: RestrictionWarning[] = [];
 
@@ -159,15 +159,16 @@ export interface ValidationResult {
 
 export function validatePlan(
 	plan: PlanGrid,
-	excludedFoods: string[],
+	excludedFoodItemIds: number[],
 	tags: string[],
 	dietTypes: string[],
 	macros: Macros,
 	recipeIngredientNames: Map<number, string[]>,
+	foodNamesById: Map<number, string>,
 	supplementTotals: Record<string, number>,
 	planCalories: number
 ): ValidationResult {
-	const exclusionWarnings = checkExclusions(plan, excludedFoods, recipeIngredientNames);
+	const exclusionWarnings = checkExclusions(plan, excludedFoodItemIds, recipeIngredientNames, foodNamesById);
 	const limits = getLimitsForTags(tags, dietTypes);
 	const restrictionWarnings = checkRestrictions(limits, supplementTotals, planCalories);
 	const macroValid = macros.c + macros.p + macros.f === 100;

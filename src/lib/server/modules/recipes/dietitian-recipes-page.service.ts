@@ -1,45 +1,25 @@
 import { db } from '$lib/server/db';
 import { recipes, recipeIngredients, foodItems, recipeCategories } from '$lib/server/db/schema';
+import {
+	deleteImageByUrl,
+	uploadImage
+} from '$lib/server/storage/file-storage';
 import { eq, and, desc, inArray, or, isNull, asc } from 'drizzle-orm';
 import { fail, type ActionFailure } from '@sveltejs/kit';
-import { writeFile, mkdir, unlink } from 'fs/promises';
-import { join } from 'path';
 
 const MAX_RECIPE_IMAGE_BYTES = 5 * 1024 * 1024;
-const RECIPE_IMAGE_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
-const EXT_BY_MIME: Record<string, string> = {
-	'image/jpeg': 'jpg',
-	'image/png': 'png',
-	'image/webp': 'webp',
-	'image/gif': 'gif'
-};
+const RECIPE_IMAGE_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
-function unlinkRecipeUploadIfOurs(imageUrl: string | null | undefined) {
-	if (!imageUrl || !imageUrl.startsWith('/uploads/recipes/')) return;
-	const base = imageUrl.slice('/uploads/recipes/'.length);
-	if (!/^[a-zA-Z0-9._-]+$/.test(base)) return;
-	const full = join(process.cwd(), 'static', 'uploads', 'recipes', base);
-	unlink(full).catch(() => {});
-}
-
-async function saveRecipeImageUpload(
-	imageFile: File | null
-): Promise<{ url: string | null; error?: string }> {
+async function saveRecipeImageUpload(imageFile: File | null): Promise<{ url: string | null; error?: string }> {
 	if (!imageFile || imageFile.size === 0 || !imageFile.name) return { url: null };
 	if (!RECIPE_IMAGE_MIME.has(imageFile.type)) {
-		return { url: null, error: 'نوع صورة غير مسموح (JPEG، PNG، WEBP، GIF)' };
+		return { url: null, error: 'نوع الملف غير مسموح. يُقبل فقط PNG أو JPG أو WEBP' };
 	}
 	if (imageFile.size > MAX_RECIPE_IMAGE_BYTES) {
 		return { url: null, error: 'حجم الصورة يتجاوز 5 ميغابايت' };
 	}
 	try {
-		const uploadsDir = join(process.cwd(), 'static', 'uploads', 'recipes');
-		await mkdir(uploadsDir, { recursive: true });
-		const ext = EXT_BY_MIME[imageFile.type] ?? 'jpg';
-		const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-		const buffer = Buffer.from(await imageFile.arrayBuffer());
-		await writeFile(join(uploadsDir, filename), buffer);
-		return { url: `/uploads/recipes/${filename}` };
+		return await uploadImage({ file: imageFile, folder: 'recipes' });
 	} catch {
 		return { url: null, error: 'تعذر حفظ الصورة' };
 	}
@@ -166,7 +146,7 @@ export async function actionCreateRecipe(params: {
 
 	if (!nameAr) return fail(400, { error: 'يرجى إدخال الاسم بالعربي' });
 
-	let ings: IngInput[];
+	let ings: IngInput[] = [];
 	try {
 		ings = JSON.parse(ingredientsJson);
 	} catch {
@@ -191,14 +171,12 @@ export async function actionCreateRecipe(params: {
 		.get();
 
 	for (const ing of ings) {
-		db.insert(recipeIngredients)
-			.values({
-				recipeId: recipe.id,
-				foodItemId: ing.foodId,
-				quantity: ing.quantity,
-				unit: ing.unit
-			})
-			.run();
+		db.insert(recipeIngredients).values({
+			recipeId: recipe.id,
+			foodItemId: ing.foodId,
+			quantity: ing.quantity,
+			unit: ing.unit
+		}).run();
 	}
 
 	return { success: true };
@@ -216,7 +194,7 @@ export async function actionDeleteRecipe(params: {
 		.where(and(eq(recipes.id, recipeId), eq(recipes.ownerId, ownerId)))
 		.get();
 	if (!row) return fail(403, { error: 'لا يمكنك حذف هذه الوصفة' });
-	unlinkRecipeUploadIfOurs(row.imageUrl);
+	await deleteImageByUrl(row.imageUrl);
 	db.delete(recipes).where(eq(recipes.id, recipeId)).run();
 	return { success: true };
 }
@@ -275,28 +253,24 @@ export async function actionEditRecipe(params: {
 			if (customText && (!Number.isFinite(foodId) || foodId <= 0)) {
 				const qty = parseFloat(String(o.quantity));
 				const unit = (typeof o.unit === 'string' ? o.unit : 'g').trim() || 'g';
-				db.insert(recipeIngredients)
-					.values({
-						recipeId: id,
-						foodItemId: null,
-						customText,
-						quantity: Number.isFinite(qty) ? qty : 0,
-						unit
-					})
-					.run();
+				db.insert(recipeIngredients).values({
+					recipeId: id,
+					foodItemId: null,
+					customText,
+					quantity: Number.isFinite(qty) ? qty : 0,
+					unit
+				}).run();
 				continue;
 			}
 			const ing = coerceFoodIngFromJson(o);
 			if (!ing) continue;
 			foodIngsForNutrients.push(ing);
-			db.insert(recipeIngredients)
-				.values({
-					recipeId: id,
-					foodItemId: ing.foodId,
-					quantity: ing.quantity,
-					unit: ing.unit
-				})
-				.run();
+			db.insert(recipeIngredients).values({
+				recipeId: id,
+				foodItemId: ing.foodId,
+				quantity: ing.quantity,
+				unit: ing.unit
+			}).run();
 		}
 		nutrients = nutrientsJsonFromFoodIngs(foodIngsForNutrients);
 	}
@@ -321,7 +295,9 @@ export async function actionEditRecipe(params: {
 
 	if (updated.changes === 0) return fail(403, { error: 'لا يمكنك تعديل هذه الوصفة' });
 
-	if (newImageUrl) unlinkRecipeUploadIfOurs(existing.imageUrl);
+	if (newImageUrl) {
+		await deleteImageByUrl(existing.imageUrl);
+	}
 
 	/* Legacy: quantity-only updates when ingredients JSON omitted */
 	if (ingredientsJson === undefined || ingredientsJson === null) {
@@ -330,10 +306,7 @@ export async function actionEditRecipe(params: {
 			const ingId = parseInt(data.get(`ingId_${i}`)?.toString() ?? '0');
 			const qty = parseFloat(data.get(`ingQty_${i}`)?.toString() ?? '0');
 			if (ingId && qty >= 0) {
-				db.update(recipeIngredients)
-					.set({ quantity: qty })
-					.where(eq(recipeIngredients.id, ingId))
-					.run();
+				db.update(recipeIngredients).set({ quantity: qty }).where(eq(recipeIngredients.id, ingId)).run();
 			}
 			i++;
 		}

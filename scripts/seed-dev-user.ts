@@ -8,7 +8,7 @@ import * as schema from '../src/lib/server/db/schema';
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
 	console.error(
-		'DATABASE_URL is not set. Example: DATABASE_URL=file:local.db npm run db:seed-dev-user'
+		'DATABASE_URL is not set. Example: DATABASE_URL=file:/tmp/nutricare.db npm run db:seed-dev-user'
 	);
 	process.exit(1);
 }
@@ -19,27 +19,29 @@ function sqlitePathFromUrl(url: string): string {
 
 const sqlitePath = path.resolve(process.cwd(), sqlitePathFromUrl(DATABASE_URL));
 const client = new Database(sqlitePath);
-client.pragma('journal_mode = WAL');
+client.pragma('journal_mode = DELETE');
 client.pragma('foreign_keys = ON');
 
 const db = drizzle(client, { schema });
 
-const DEV_EMAIL = 'dev@example.com';
-const DEV_PASSWORD = 'password';
-const DEV_NAME = 'Dev Dietitian';
-const DEV_USERNAME = 'devuser';
-const DEV_PHONE = '+10000000000';
-const ORG_NAME = 'Dev Organization';
-const ORG_TYPE = 'clinic';
+const DIETITIAN = {
+	email: process.env.SEED_DIETITIAN_EMAIL ?? 'dietitian@example.com',
+	password: process.env.SEED_DIETITIAN_PASSWORD ?? 'password',
+	name: process.env.SEED_DIETITIAN_NAME ?? 'Dietitian',
+	username: process.env.SEED_DIETITIAN_USERNAME ?? 'dietitian',
+	phone: process.env.SEED_DIETITIAN_PHONE ?? '+10000000000'
+};
+const ORG_NAME = process.env.SEED_ORG_NAME ?? 'NutriCare Organization';
+const ORG_TYPE = process.env.SEED_ORG_TYPE ?? 'clinic';
 
 async function main() {
 	const now = new Date().toISOString();
-	const passwordHash = bcrypt.hashSync(DEV_PASSWORD, 10);
+	const passwordHash = bcrypt.hashSync(DIETITIAN.password, 10);
 
 	const existing = await db
 		.select()
 		.from(schema.users)
-		.where(eq(schema.users.email, DEV_EMAIL))
+		.where(eq(schema.users.email, DIETITIAN.email))
 		.limit(1);
 
 	let userId: number;
@@ -50,22 +52,22 @@ async function main() {
 			.update(schema.users)
 			.set({
 				password: passwordHash,
-				name: DEV_NAME,
-				username: DEV_USERNAME,
-				phone: DEV_PHONE,
+				name: DIETITIAN.name,
+				username: DIETITIAN.username,
+				phone: DIETITIAN.phone,
 				updatedAt: now,
 				emailVerifiedAt: now
 			})
 			.where(eq(schema.users.id, userId));
-		console.log(`Updated dev user id=${userId} (${DEV_EMAIL})`);
+		console.log(`Updated dietitian user id=${userId} (${DIETITIAN.email})`);
 	} else {
 		const [row] = await db
 			.insert(schema.users)
 			.values({
-				name: DEV_NAME,
-				email: DEV_EMAIL,
-				username: DEV_USERNAME,
-				phone: DEV_PHONE,
+				name: DIETITIAN.name,
+				email: DIETITIAN.email,
+				username: DIETITIAN.username,
+				phone: DIETITIAN.phone,
 				password: passwordHash,
 				emailVerifiedAt: now,
 				createdAt: now,
@@ -73,7 +75,7 @@ async function main() {
 			})
 			.returning({ id: schema.users.id });
 		userId = row.id;
-		console.log(`Created dev user id=${userId} (${DEV_EMAIL})`);
+		console.log(`Created dietitian user id=${userId} (${DIETITIAN.email})`);
 	}
 
 	let orgId: number;
@@ -124,7 +126,7 @@ async function main() {
 		console.log(`Created dietitian membership for user ${userId}`);
 	}
 
-	console.log(`Done. Sign in at /login with ${DEV_EMAIL} / ${DEV_PASSWORD}`);
+	console.log(`Done. Sign in at /login with ${DIETITIAN.email} / ${DIETITIAN.password}`);
 }
 
 main()

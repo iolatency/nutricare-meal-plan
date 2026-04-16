@@ -5,12 +5,24 @@ import {
 	ChatForbiddenError,
 	ChatValidationError,
 	getOrCreateForPatient,
-	listMessages
+	listMessages,
+	resolveDietitianIdForPatient
 } from '$lib/server/modules/chat/chat.service';
+import { db } from '$lib/server/db';
+import { users } from '$lib/server/db/schema';
+import { eq } from 'drizzle-orm';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	const user = requireUser(locals.user);
 	if (user.role !== 'patient') redirect(302, '/');
+
+	// Resolve dietitian ID so the client can poll presence
+	const dietitianId = resolveDietitianIdForPatient(user.id);
+	let dietitianName: string | null = null;
+	if (dietitianId) {
+		const d = db.select({ name: users.name }).from(users).where(eq(users.id, dietitianId)).get();
+		dietitianName = d?.name ?? null;
+	}
 
 	try {
 		const conversation = getOrCreateForPatient(user.id);
@@ -19,7 +31,9 @@ export const load: PageServerLoad = async ({ locals }) => {
 			conversation,
 			initialMessages: results,
 			chatError: null as string | null,
-			user
+			user,
+			dietitianId,
+			dietitianName
 		};
 	} catch (e) {
 		if (e instanceof ChatValidationError || e instanceof ChatForbiddenError) {
@@ -27,7 +41,9 @@ export const load: PageServerLoad = async ({ locals }) => {
 				conversation: null,
 				initialMessages: [],
 				chatError: e.message,
-				user
+				user,
+				dietitianId,
+				dietitianName
 			};
 		}
 		throw e;

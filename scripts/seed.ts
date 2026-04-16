@@ -1,13 +1,13 @@
 /**
  * Master seed runner — executes all seeds in dependency order.
  * (Demo meal-plan journey is optional: `npm run db:seed-demo-journey` — not part of this pipeline.)
- * Run with: DATABASE_URL=file:local.db npm run db:seed
+ * Run with: DATABASE_URL=file:/tmp/nutricare.db npm run db:seed
  */
 import { execSync } from 'node:child_process';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
-	console.error('DATABASE_URL is not set. Example: DATABASE_URL=file:local.db npm run db:seed');
+	console.error('DATABASE_URL is not set. Example: DATABASE_URL=file:/tmp/nutricare.db npm run db:seed');
 	process.exit(1);
 }
 

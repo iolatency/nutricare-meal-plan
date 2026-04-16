@@ -1,368 +1,416 @@
 # NutriCare Meal Plan
 
-A full-stack nutrition management platform for dietitians and their patients. Built with SvelteKit, Drizzle ORM, and SQLite. The UI is in Arabic (RTL).
+NutriCare is an Arabic-first (RTL) nutrition platform built with SvelteKit.
+
+- Dietitian side: patients, meal plan sessions, foods, recipes, supplements, chat.
+- Patient side: login flow, activation flow, dashboard/session pages.
+- Backend: SQLite + Drizzle + server modules + optional external APIs.
 
 ---
 
-## Table of contents
+## Table of Contents
 
-1. [What it does](#what-it-does)
-2. [Stack](#stack)
-3. [Requirements](#requirements)
-4. [Getting the system running (step-by-step)](#getting-the-system-running)
-5. [Logging in for the first time](#logging-in-for-the-first-time)
-6. [How the dietitian uses the system](#how-the-dietitian-uses-the-system)
-7. [How a patient uses the system](#how-a-patient-uses-the-system)
-8. [Environment variables](#environment-variables)
-9. [Database scripts reference](#database-scripts-reference)
-10. [Development commands](#development-commands)
-11. [Project layout](#project-layout)
-
----
-
-## What it does
-
-**Dietitian portal** — everything a dietitian needs to manage their patients:
-
-- View and activate patient accounts
-- Create meal plan sessions per patient
-- Browse and manage a food items catalog
-- Create AI-generated or manual recipes
-- Prescribe supplement regimens
-
-**Auth flow:**
-
-- Registration with OTP email verification
-- Cookie-based sessions (no JWT)
-- Role-based routing: dietitians and patients see completely separate portals
+1. [Prerequisites](#prerequisites)
+2. [Quick Start (Local Activation)](#quick-start-local-activation)
+3. [Environment Profiles](#environment-profiles)
+4. [Seed Data, Login Accounts, and Demo Data](#seed-data-login-accounts-and-demo-data)
+5. [OTP (Resend) and Console OTP Mode](#otp-resend-and-console-otp-mode)
+6. [Edamam API Setup](#edamam-api-setup)
+7. [Deployment Options](#deployment-options)
+8. [S3 / S3-Compatible Storage Notes](#s3--s3-compatible-storage-notes)
+9. [Scripts Reference](#scripts-reference)
+10. [Testing Guide](#testing-guide)
+11. [Project Structure](#project-structure)
+12. [Troubleshooting](#troubleshooting)
 
 ---
 
-## Stack
+## Prerequisites
 
-| Layer        | Technology                           |
-| ------------ | ------------------------------------ |
-| Framework    | SvelteKit (`@sveltejs/adapter-node`) |
-| ORM          | Drizzle ORM + Drizzle Kit            |
-| Database     | SQLite (`better-sqlite3`)            |
-| Styling      | Tailwind CSS v4                      |
-| Email        | Resend (OTP codes)                   |
-| AI           | DeepSeek API (recipe generation)     |
-| Food search  | Edamam API (optional)                |
-| Storage sync | Supabase Storage (optional)          |
+### Required
 
----
+- Node.js `22+`
+- npm `10+`
+- Native build toolchain for `better-sqlite3`
+  - macOS: Xcode Command Line Tools
+  - Ubuntu/Debian: `build-essential`, `python3`, `make`, `g++`
 
-## Requirements
-
-Install prerequisites before [getting the system running](#getting-the-system-running). Full detail is in **[REQUIREMENTS.md](REQUIREMENTS.md)** — Node.js **22+**, npm, and a native build toolchain for `better-sqlite3` (plus optional **k6** for load tests and **Playwright** browsers for E2E tests).
-
-**Project packages:** this app uses **Node**, not Python. Dependencies are in **`package.json`** / **`package-lock.json`** — run **`npm install`**. A **`requirements.txt`** file exists only as a short note for contributors (this repo has no pip packages); use npm for installs.
-
----
-
-## Getting the system running
-
-Follow these steps in order. Every step is required unless marked optional.
-
-### Step 1 — clone and install dependencies
+### Install dependencies
 
 ```bash
 git clone <repo-url>
-cd nutricare-meal-plan
+cd Test-Nutri-Meal
 npm install
 ```
 
-This installs all packages and runs a small post-install shim for UUID compatibility.
-
 ---
 
-### Step 2 — create your environment file
+## Quick Start (Local Activation)
+
+This section gets the app running from zero in minutes.
+
+### 1) Create `.env`
 
 ```bash
 cp .env.example .env
 ```
 
-Open `.env` and set at minimum:
+### 2) Use simple local mode config
 
 ```env
 DATABASE_URL=file:local.db
+ALLOW_LOCAL_DEV_SQLITE=1
+ALLOW_LOCAL_DEV_FILE_STORAGE=1
+FILE_STORAGE_PROVIDER=local
+SKIP_DB_SEED=0
+RUN_DB_SEED_ON_START=0
 ```
 
-That single line is all you need to run locally. Everything else is optional (email, AI, Supabase). See the [Environment variables](#environment-variables) section for the full list.
-
-> **Note:** `.env` is git-ignored so your secrets will never be committed.
-
----
-
-### Step 3 — create the database and apply the schema
-
-This creates `local.db` in the project root and applies all Drizzle table definitions:
+### 3) Create/update schema
 
 ```bash
 DATABASE_URL=file:local.db npm run db:push
 ```
 
-You only need to run this once. If you change the schema later, run it again to sync.
-
-If you hit a conflict (e.g. you already have a DB from a previous version), use the force flag:
-
-```bash
-DATABASE_URL=file:local.db npm run db:push:force
-```
-
----
-
-### Step 4 — seed the database with starter data
-
-This creates the dev dietitian account, a patient account, and fills the food/meal catalog:
+### 4) Seed baseline data
 
 ```bash
 DATABASE_URL=file:local.db npm run db:seed
 ```
 
-What gets created:
-
-| Account       | Email                 | Password   | Role      |
-| ------------- | --------------------- | ---------- | --------- |
-| Dev Dietitian | `dev@example.com`     | `password` | dietitian |
-| Patient       | `patient@example.com` | `password` | patient   |
-
-The meal catalog (food items, categories) is also loaded from `scripts/seed-meal-domain.ts`.
-
----
-
-### Step 5 — start the development server
+### 5) Run app
 
 ```bash
 npm run dev
 ```
 
-Open your browser at `http://localhost:5173`.
-
-The app is now fully functional. You can log in as the dietitian or as the patient.
+Open [http://localhost:5173](http://localhost:5173).
 
 ---
 
-### Optional: seed a full demo journey
+## Environment Profiles
 
-If you want to see the system populated with a complete realistic workflow (dietitian + patient + meal plan already created), run:
+Use one of these profiles depending on your goal.
+
+### Profile A - Pure local development (no external services)
+
+```env
+DATABASE_URL=file:local.db
+ALLOW_LOCAL_DEV_SQLITE=1
+ALLOW_LOCAL_DEV_FILE_STORAGE=1
+FILE_STORAGE_PROVIDER=local
+SKIP_DB_SEED=0
+RUN_DB_SEED_ON_START=0
+```
+
+### Profile B - Local app + external APIs (Resend/Edamam)
+
+```env
+DATABASE_URL=file:local.db
+ALLOW_LOCAL_DEV_SQLITE=1
+ALLOW_LOCAL_DEV_FILE_STORAGE=1
+FILE_STORAGE_PROVIDER=local
+RESEND_API_KEY=re_...
+EMAIL_FROM=NutriCare <onboarding@resend.dev>
+EDAMAM_APP_ID=...
+EDAMAM_APP_KEY=...
+```
+
+### Profile C - Hosted mode baseline (generic)
+
+```env
+DATABASE_URL=file:/tmp/nutricare.db
+FILE_STORAGE_PROVIDER=supabase
+SQLITE_STORAGE_SYNC=1
+SQLITE_STORAGE_BUCKET=media
+SQLITE_STORAGE_OBJECT_PATH=nutricare.sqlite
+SUPABASE_STORAGE_BUCKET=media
+```
+
+---
+
+## Seed Data, Login Accounts, and Demo Data
+
+### Baseline seed
+
+```bash
+DATABASE_URL=file:local.db npm run db:seed
+```
+
+Creates:
+
+- dietitian user + org + membership
+- patient user + membership
+- food/supplement baseline catalogs
+
+### Seeded login accounts
+
+After `db:seed`:
+
+- Dietitian: `dietitian@example.com` / `password`
+- Patient: `patient@example.com` / `password`
+
+### Rich demo journey seed
 
 ```bash
 DATABASE_URL=file:local.db npm run db:seed-demo-journey
 ```
 
-This runs on top of the existing seed — it does not replace it.
+This adds:
 
----
+- realistic sessions across statuses
+- recipes, tracking logs, chats
+- a fuller "platform look" for demos
 
-### Resetting the database
-
-If you want to start fresh at any point:
-
-```bash
-# Wipe all rows and re-seed (keeps the schema)
-DATABASE_URL=file:local.db npm run db:reset
-
-# Nuclear option: drop the file, recreate schema, seed
-DATABASE_URL=file:local.db npm run db:hard-reset
-```
-
----
-
-## Logging in for the first time
-
-1. Go to `http://localhost:5173/login`
-2. Use one of the seeded accounts:
-   - Dietitian: `dev@example.com` / `password`
-   - Patient: `patient@example.com` / `password`
-3. You are redirected to the home page (`/`), which sends you to the correct portal based on your role
-
-> **Patients see an "awaiting activation" screen** until a dietitian activates them. The seeded patient account is already activated, so you can log in directly.
-
----
-
-## How the dietitian uses the system
-
-After logging in as a dietitian you land on the dietitian portal. Here is the step-by-step workflow:
-
-### 1. Activate a patient
-
-When a new patient self-registers, they appear in the system but cannot access the patient portal until a dietitian activates them.
-
-- Go to `/dietitian/meal-plan`
-- Find the patient in the list
-- Click the activate button and confirm with their email address
-- The patient can now log in and see their portal
-
-### 2. Start a meal plan session for a patient
-
-A meal plan session ties a dietitian to a specific patient for a period of work.
-
-- Go to `/dietitian/meal-plan`
-- Select a patient and create a new session
-- The session opens at `/dietitian/meal-plan/[sessionId]`
-- From inside the session you can assign meals, track progress, and view the plan
-
-### 3. Manage foods
-
-The food catalog is the source of ingredients for meal plans and recipes.
-
-- Go to `/dietitian/foods`
-- Browse existing food items
-- Add custom foods or search the Edamam database (if `EDAMAM_APP_ID` and `EDAMAM_APP_KEY` are set in `.env`)
-
-### 4. Create recipes
-
-Recipes are reusable meal components you can attach to meal plans.
-
-- Go to `/dietitian/recipes`
-- **Manual:** fill in ingredients and nutritional info yourself
-- **AI-generated:** click the AI button, describe the meal in Arabic, and DeepSeek generates the recipe for you (requires `DEEPSEEK_API_KEY` in `.env`)
-- Saved recipes appear in the list and can be added to any patient's meal plan
-
-### 5. Prescribe supplements
-
-- Go to `/dietitian/supplements`
-- Add supplement items and dosage notes for the patient
-
----
-
-## How a patient uses the system
-
-After logging in as a patient:
-
-1. **If not yet activated:** you see the "awaiting activation" page. Wait for your dietitian to activate your account.
-2. **After activation:** you are signed in; dedicated patient views for meal plans and messaging the dietitian are not implemented yet.
-
----
-
-## Environment variables
-
-| Variable                     | Required | Default               | Description                                                                                                               |
-| ---------------------------- | -------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`               | **Yes**  | —                     | SQLite file path. Use `file:local.db` for local dev                                                                       |
-| `RESEND_API_KEY`             | No       | —                     | Resend API key for OTP emails. **Required in production.** Without it, OTP codes are printed to the server console in dev |
-| `EMAIL_FROM`                 | No       | —                     | Sender address, e.g. `NutriCare <no-reply@example.com>`                                                                   |
-| `DEEPSEEK_API_KEY`           | No       | —                     | Enables the AI recipe generation button. Without it, the button is hidden                                                 |
-| `EDAMAM_APP_ID`              | No       | —                     | Edamam food search app ID (get free keys at developer.edamam.com)                                                         |
-| `EDAMAM_APP_KEY`             | No       | —                     | Edamam food search app key                                                                                                |
-| `SQLITE_STORAGE_SYNC`        | No       | `0`                   | Set to `1` to sync the SQLite file to Supabase Storage on every request                                                   |
-| `SUPABASE_URL`               | No       | —                     | Required when `SQLITE_STORAGE_SYNC=1`                                                                                     |
-| `SUPABASE_SERVICE_ROLE_KEY`  | No       | —                     | Required when `SQLITE_STORAGE_SYNC=1`. Server-only — never expose to the client                                           |
-| `SQLITE_STORAGE_BUCKET`      | No       | —                     | Supabase Storage bucket name, e.g. `media`                                                                                |
-| `SQLITE_STORAGE_OBJECT_PATH` | No       | —                     | Path inside the bucket, e.g. `nutricare.sqlite`                                                                           |
-| `SKIP_DB_SEED`               | No       | —                     | Set to `1` to prevent auto-seed on server start                                                                           |
-| `RUN_DB_SEED_ON_START`       | No       | —                     | Set to `1` to force re-seed even when users already exist                                                                 |
-| `SEED_PATIENT_NAME`          | No       | `Patient`             | Name for the patient created by `db:seed`                                                                                 |
-| `SEED_PATIENT_EMAIL`         | No       | `patient@example.com` | Email for the seeded patient                                                                                              |
-| `SEED_PATIENT_USERNAME`      | No       | `patient`             | Username for the seeded patient                                                                                           |
-| `SEED_PATIENT_PASSWORD`      | No       | `password`            | Password for the seeded patient                                                                                           |
-
----
-
-## Database scripts reference
-
-Run all scripts with `DATABASE_URL=file:local.db npm run <script>`.
-
-| Script                 | What it does                                                                                       |
-| ---------------------- | -------------------------------------------------------------------------------------------------- |
-| `db:push`              | Apply the current Drizzle schema to the database. Run this after any schema change                 |
-| `db:push:force`        | Same as above but forces changes that would normally require manual review (e.g. dropping columns) |
-| `db:generate`          | Generate SQL migration files from schema changes (writes to `drizzle/`)                            |
-| `db:migrate`           | Run pending SQL migration files from `drizzle/`                                                    |
-| `db:studio`            | Open Drizzle Studio — a browser-based GUI to inspect and edit the database live                    |
-| `db:seed`              | Full seed: creates dietitian + patient + meal catalog                                              |
-| `db:seed-dev-user`     | Seed only the dev dietitian account (`dev@example.com` / `password`)                               |
-| `db:seed-demo-journey` | Seed a complete realistic workflow on top of the base seed                                         |
-| `db:reset`             | Delete all rows, then re-run `db:seed`                                                             |
-| `db:hard-reset`        | Drop the database file, re-push the schema, then seed                                              |
-| `db:clear`             | Delete all rows but keep the schema and file                                                       |
-| `db:drop`              | Delete the database file entirely                                                                  |
-| `db:import-v0`         | Import data from a legacy NutriCare v0 SQLite file. Set `NUTRICARE_V0_DB=/path/to/file.sqlite`     |
-| `db:patch-v2`          | One-time patch to migrate supplement data to the v2 format                                         |
-| `db:dedupe-sessions`   | Remove duplicate meal plan sessions (maintenance script)                                           |
-| `db:verify-seed`       | Run checks to confirm seed data is present and correctly formed                                    |
-
----
-
-## Development commands
+### Verify seed integrity
 
 ```bash
-npm run dev            # start dev server with hot reload
-npm run check          # TypeScript + Svelte type checking
-npm run lint           # check formatting (Prettier) and linting (ESLint)
-npm run format         # auto-fix all formatting issues
-npm test               # run unit tests (Vitest)
-npm run test:watch     # run unit tests in watch mode
-npm run test:coverage  # run unit tests with coverage report
-npm run test:e2e       # run end-to-end tests (Playwright)
-npm run test:e2e:ui    # run Playwright tests with the interactive UI
-npm run build          # production build (outputs to build/)
-npm run preview        # preview the production build locally
-npm start              # run the built app (requires npm run build first)
+DATABASE_URL=file:local.db npm run db:verify-seed
 ```
 
 ---
 
-## Project layout
+## OTP (Resend) and Console OTP Mode
 
+Registration requires OTP verification.
+
+### If Resend is configured
+
+Set:
+
+```env
+RESEND_API_KEY=re_...
+EMAIL_FROM=NutriCare <onboarding@resend.dev>
 ```
+
+OTP is sent by email.
+
+### If Resend is not configured (development)
+
+OTP is printed in server console logs.
+
+This is useful for local dev and QA without mail setup.
+
+---
+
+## Edamam API Setup
+
+Edamam powers food search/import features.
+
+```env
+EDAMAM_APP_ID=your_id
+EDAMAM_APP_KEY=your_key
+```
+
+If missing, Edamam-dependent flows will be unavailable or return empty/error responses.
+
+---
+
+## Deployment Options
+
+This app deploys as a Node service:
+
+```bash
+npm ci
+npm run build
+npm start
+```
+
+### Option 1 - Single instance + persistent disk
+
+- Keep SQLite on mounted volume path.
+- Best for simple low-traffic deployment.
+
+### Option 2 - Ephemeral runtime + object storage snapshots/sync
+
+- Use writable runtime path like `/tmp/nutricare.db`.
+- Sync media and/or DB artifact strategy with object storage.
+- Ensure startup checks and backup lifecycle.
+
+### Option 3 - Scale-out migration
+
+For multi-instance writes / high concurrency:
+
+- plan migration to managed SQL (Postgres/MySQL)
+- keep object storage for media assets
+
+---
+
+## S3 / S3-Compatible Storage Notes
+
+You can use AWS S3, Cloudflare R2, MinIO, Backblaze B2, or any S3-compatible target for operational artifacts and media strategy.
+
+### Practical checklist
+
+- Use server-side credentials only (never expose secrets client-side).
+- Enable bucket versioning where possible.
+- Keep retention + restore policy documented.
+- Validate bucket permissions in pre-prod.
+- Keep startup readiness checks before serving traffic.
+
+### Media best practices
+
+- Upload through server routes only.
+- Add size/type validation server-side.
+- Keep deterministic object prefixes per environment.
+
+---
+
+## Scripts Reference
+
+Use `DATABASE_URL=file:local.db` for local examples below.
+
+### Core DB lifecycle
+
+```bash
+npm run db:push
+npm run db:push:force
+npm run db:generate
+npm run db:migrate
+npm run db:studio
+```
+
+### Seed and demo
+
+```bash
+npm run db:seed
+npm run db:seed-dev-user
+npm run db:seed-meal
+npm run db:seed-demo-journey
+npm run db:verify-seed
+```
+
+### Maintenance
+
+```bash
+npm run db:clear
+npm run db:reset
+npm run db:hard-reset
+npm run db:drop
+npm run db:dedupe-sessions
+npm run db:import-v0
+npm run db:patch-v2
+```
+
+### Storage/sync utility scripts
+
+```bash
+npm run db:test-storage-sync
+npm run db:clear-supabase
+npm run db:flush-supabase
+```
+
+---
+
+## Testing Guide
+
+### Main commands
+
+```bash
+npm run check
+npm run lint
+npm run test
+npm run test:coverage
+npm run test:e2e
+npm run test:e2e:ui
+```
+
+### Test folders and intent
+
+- `tests/e2e/` - end-to-end user flows (Playwright)
+- `tests/security/` - API/security behavior checks
+- `tests/data-integrity/` - DB constraints + integrity checks
+- `tests/load/` - k6 load scripts
+
+### Typical local test flow
+
+1. `db:push`
+2. `db:seed`
+3. `npm run test`
+4. `npm run test:e2e`
+
+---
+
+## Project Structure
+
+```text
 src/
-  routes/
-    login/                     # Login page
-    register/                  # Registration + OTP verification (multi-step)
-    logout/                    # Clears the session cookie
-    dietitian/                 # Dietitian portal — requires dietitian role
-      meal-plan/               # Patient list + session management
-        [sessionId]/           # Individual meal plan session view
-          tracking/            # Meal tracking within a session
-      foods/                   # Food catalog browser
-      recipes/                 # Recipe library + AI generation
-      supplements/             # Supplement prescription management
-      messages/                # Chat with patients
-    patient/                   # Patient portal — requires patient role
-      awaiting-activation/     # Shown to patients not yet activated
-      dashboard/[sessionId]    # Patient's meal plan view
-      messages/                # Chat with the dietitian
-    api/                       # Server-only API endpoints
-      ai/                      # AI endpoints (meal-plan, recipe generation)
-      chat/                    # Messaging endpoints
-      foods/                   # Food CRUD
-      supplements/             # Supplement CRUD
-      users/                   # User management
+  routes/                # pages + server endpoints
   lib/
     server/
-      db/                      # Drizzle schema, migration runner, DB init
-      modules/                 # Business logic per domain
-        auth/                  # Session handling, OTP, registration
-        chat/                  # Messaging service
-        meal-plan/             # Meal plan session logic
-        recipes/               # Recipe CRUD
-        foods/                 # Food catalog logic
-        supplements/           # Supplement logic
-        users/                 # User registration, activation
-      ai/                      # DeepSeek API integration
-      email/                   # Resend email sending
-      config/                  # Server config helpers
-    features/                  # Svelte UI component libraries per feature
-    components/                # Shared UI components
-    locales/ar/                # Arabic locale strings (all UI text)
-    validation/                # Shared input validation
-scripts/                       # One-off Node scripts (seed, import, patch)
-drizzle/                       # SQL migration files generated by Drizzle Kit
-tests/
-  e2e/                         # Playwright end-to-end tests
-  security/                    # Security-focused API and injection tests
-  data-integrity/              # SQLite FK and constraint validation scripts
-load-tests/                    # Load testing scenarios
+      db/                # schema, DB bootstrap, migrations, sync helpers
+      modules/           # domain services
+      storage/           # file/object storage behavior
+scripts/                 # seeds + maintenance scripts
+drizzle/                 # SQL migration artifacts
+tests/                   # e2e/security/data/load
 ```
 
 ---
 
-## Notes
+## Troubleshooting
 
-- SQLite pragmas applied at runtime: `journal_mode = WAL`, `foreign_keys = ON`, `busy_timeout = 8000`
-- The entire UI is in Arabic; RTL layout is applied via `dir="rtl"` on root elements
-- Unit tests run sequentially (not in parallel) to avoid SQLite lock contention on `local.db`
-- All locale strings live in `src/lib/locales/ar/` — edit them there to change any UI text
+### `DATABASE_URL is not set`
+
+Set in `.env` or inline:
+
+```bash
+DATABASE_URL=file:local.db npm run db:push
+```
+
+### Login fails after fresh setup
+
+- Run `db:seed`
+- Use seeded credentials exactly as listed
+- verify database path is the same across commands
+
+### OTP email not received
+
+- If no `RESEND_API_KEY`, use console OTP mode
+- if key exists, verify sender/domain settings in Resend dashboard
+
+### Edamam search not working
+
+- check `EDAMAM_APP_ID` and `EDAMAM_APP_KEY`
+- verify keys are valid and not rate-limited
+
+### SQLite locking issues
+
+- avoid sharing one SQLite file across multiple writers/processes
+- for scale, move to managed SQL
+
+### Build works, runtime fails
+
+- confirm runtime env vars exist in deploy platform
+- confirm writable DB directory
+- confirm storage credentials are server-only and valid
+
+---
+
+## Meal Plan API Timing (Debug Summary)
+
+Runtime measurement for `POST /api/ai/meal-plan` (weekly, 7 days, 6 meals/day) shows backend overhead is negligible compared to AI generation time.
+
+| Metric (latest run) | Time (ms) |
+|---|---:|
+| Hook total | 75,423 |
+| Route total | 75,419 |
+| Service total | 75,418 |
+| DB queries total | 0 |
+| Generation phase | 75,417 |
+| Cross-day dedupe | 0 |
+| Flush (AI route path) | 1 |
+
+| Split | Share |
+|---|---:|
+| AI generation/parsing | ~99.99% |
+| Backend/DB/route overhead | ~0.01% (combined) |
+
+Kept changes from performance debugging:
+
+- Non-blocking storage flush for AI meal-plan route in `hooks.server.ts`
+- Stronger weekly cuisine hints to reduce duplicate names
+- Main day generation temperature set to `0.6`, targeted replacement calls keep `0.3`
+
+Detailed tables and run notes: `../Doc/meal-plan-api-performance-summary.md`.
+

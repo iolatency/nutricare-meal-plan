@@ -105,9 +105,7 @@
 					}}
 				>
 					<div class="activate-dialog__inner">
-						<label class="activate-dialog__label" for="activate-patient-email"
-							>البريد الإلكتروني للمريض</label
-						>
+						<label class="activate-dialog__label" for="activate-patient-email">البريد الإلكتروني للمريض</label>
 						<input
 							id="activate-patient-email"
 							type="email"
@@ -134,29 +132,12 @@
 		</div>
 		<div class="search-wrapper">
 			<svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					stroke-width="2"
-					d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"
-				/>
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0" />
 			</svg>
-			<input
-				type="text"
-				bind:value={search}
-				placeholder="ابحث بالاسم، البريد، أو رقم الهاتف..."
-				class="search-input"
-			/>
+			<input type="text" bind:value={search} placeholder="ابحث بالاسم، البريد، أو رقم الهاتف..." class="search-input" />
 			{#if search}
-				<button class="search-clear" onclick={() => (search = '')} aria-label="مسح البحث">
-					<svg
-						width="14"
-						height="14"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"><path d="M18 6L6 18M6 6l12 12" /></svg
-					>
+				<button class="search-clear" onclick={() => search = ''} aria-label="مسح البحث">
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
 				</button>
 			{/if}
 		</div>
@@ -173,21 +154,8 @@
 	{#if data.patients.length === 0}
 		<div class="empty-state">
 			<div class="empty-icon">
-				<svg
-					width="32"
-					height="32"
-					fill="none"
-					stroke="#3cb96b"
-					stroke-width="1.5"
-					viewBox="0 0 24 24"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"
-					/><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path
-						d="M16 3.13a4 4 0 0 1 0 7.75"
-					/>
+				<svg width="32" height="32" fill="none" stroke="#3cb96b" stroke-width="1.5" viewBox="0 0 24 24">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
 				</svg>
 			</div>
 			<p class="empty-title">لا يوجد عملاء</p>
@@ -195,19 +163,8 @@
 		</div>
 	{:else if filtered.length === 0}
 		<div class="empty-state empty-state--small">
-			<svg
-				width="24"
-				height="24"
-				fill="none"
-				stroke="#8b909a"
-				stroke-width="1.5"
-				viewBox="0 0 24 24"
-			>
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"
-				/>
+			<svg width="24" height="24" fill="none" stroke="#8b909a" stroke-width="1.5" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0" />
 			</svg>
 			<p class="empty-desc">لا توجد نتائج مطابقة لـ "{search}"</p>
 		</div>
@@ -217,7 +174,7 @@
 		{/if}
 
 		<div class="list">
-			{#each filtered as patient}
+			{#each filtered as patient, i}
 				<form
 					method="POST"
 					action="?/createSession"
@@ -250,16 +207,8 @@
 						<!-- Phone -->
 						{#if patient.phone}
 							<div class="row-meta row-phone">
-								<svg
-									class="meta-icon"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-								>
-									<path
-										d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"
-									/>
+								<svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
 								</svg>
 								<span dir="ltr">{patient.phone}</span>
 							</div>
@@ -267,19 +216,13 @@
 
 						<!-- Last meal plan update -->
 						<div class="row-meta row-date">
-							<svg
-								class="meta-icon"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-							>
-								<rect width="18" height="18" x="3" y="4" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
+							<svg class="meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
 							</svg>
 							{#if patient.latestSession}
-								<span>آخر تحديث: {relativeDate(patient.latestSession.startDate)}</span>
+								<span>آخر تحديث: {relativeDate(patient.latestSession.lastUpdatedAt ?? patient.latestSession.startDate)}</span>
 							{:else if patient.lastTouchSession}
-								<span>آخر تحديث: {relativeDate(patient.lastTouchSession.startDate)}</span>
+								<span>آخر تحديث: {relativeDate(patient.lastTouchSession.lastUpdatedAt ?? patient.lastTouchSession.startDate)}</span>
 							{:else}
 								<span class="no-plan">لا توجد خطة</span>
 							{/if}
@@ -294,15 +237,8 @@
 									متابعة
 								{/if}
 							</span>
-							<svg
-								width="16"
-								height="16"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-							>
-								<path d="M15 19l-7-7 7-7" />
+							<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M15 19l-7-7 7-7"/>
 							</svg>
 						</div>
 					</button>
@@ -392,9 +328,7 @@
 		font-family: 'Tajawal', sans-serif;
 		outline: none;
 		box-sizing: border-box;
-		transition:
-			border 0.15s,
-			box-shadow 0.15s;
+		transition: border .15s, box-shadow .15s;
 		background: #fff;
 		color: #1a1d23;
 	}
@@ -402,9 +336,7 @@
 		border-color: #3cb96b;
 		box-shadow: 0 0 0 3px rgba(60, 185, 107, 0.1);
 	}
-	.search-input::placeholder {
-		color: #b0b5c0;
-	}
+	.search-input::placeholder { color: #b0b5c0; }
 	.search-clear {
 		position: absolute;
 		left: 10px;
@@ -420,12 +352,9 @@
 		justify-content: center;
 		cursor: pointer;
 		color: #8b909a;
-		transition: all 0.15s;
+		transition: all .15s;
 	}
-	.search-clear:hover {
-		background: #e8eaed;
-		color: #4b5563;
-	}
+	.search-clear:hover { background: #e8eaed; color: #4b5563; }
 
 	@keyframes activatePanelIn {
 		from {
@@ -497,10 +426,7 @@
 		color: #fff;
 		background: linear-gradient(168deg, #22b077 0%, #0a5a3c 52%, #073c28 100%);
 		box-shadow: 0 4px 14px rgba(10, 90, 60, 0.22);
-		transition:
-			transform 0.15s ease,
-			filter 0.15s ease,
-			box-shadow 0.15s ease;
+		transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
 	}
 
 	.activate-open-btn:hover {
@@ -550,9 +476,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		transition:
-			background 0.15s ease,
-			color 0.15s ease;
+		transition: background 0.15s ease, color 0.15s ease;
 	}
 
 	.activate-dialog__close:hover {
@@ -630,10 +554,7 @@
 		line-height: 1.35;
 		background: linear-gradient(168deg, #22b077 0%, #0a5a3c 100%);
 		box-shadow: 0 2px 8px rgba(10, 90, 60, 0.25);
-		transition:
-			transform 0.12s ease,
-			filter 0.12s ease,
-			box-shadow 0.12s ease;
+		transition: transform 0.12s ease, filter 0.12s ease, box-shadow 0.12s ease;
 	}
 
 	.activate-dialog__submit:hover:not(:disabled) {
@@ -693,9 +614,7 @@
 		padding: 60px 20px;
 		color: #8b909a;
 	}
-	.empty-state--small {
-		padding: 40px 20px;
-	}
+	.empty-state--small { padding: 40px 20px; }
 	.empty-icon {
 		width: 64px;
 		height: 64px;
@@ -746,7 +665,7 @@
 		border-bottom: 1px solid #f0f2f5;
 		font-family: 'Tajawal', sans-serif;
 		cursor: pointer;
-		transition: background 0.15s;
+		transition: background .15s;
 	}
 	form:last-child .list-row {
 		border-bottom: none;
@@ -795,21 +714,15 @@
 		flex-shrink: 0;
 		white-space: nowrap;
 	}
-	.row-phone {
-		min-width: 130px;
-	}
-	.row-date {
-		min-width: 160px;
-	}
+	.row-phone { min-width: 130px; }
+	.row-date { min-width: 160px; }
 	.meta-icon {
 		width: 13px;
 		height: 13px;
 		flex-shrink: 0;
 		opacity: 0.5;
 	}
-	.no-plan {
-		color: #b0b5c0;
-	}
+	.no-plan { color: #b0b5c0; }
 
 	/* Action */
 	.row-action {
@@ -829,14 +742,8 @@
 
 	/* Responsive: hide phone/date on small screens */
 	@media (max-width: 640px) {
-		.row-phone {
-			display: none;
-		}
-		.row-date {
-			display: none;
-		}
-		.action-label {
-			display: none;
-		}
+		.row-phone { display: none; }
+		.row-date { display: none; }
+		.action-label { display: none; }
 	}
 </style>

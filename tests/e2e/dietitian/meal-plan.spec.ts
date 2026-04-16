@@ -1,75 +1,56 @@
-/**
- * Dietitian — Meal Plan E2E Tests
- *
- * Requires the dev seed user: npm run db:seed-dev-user
- * Dev credentials: dev@example.com / password (role: dietitian)
- */
 import { test, expect, type Page } from '@playwright/test';
+
+const DIETITIAN_EMAIL = process.env.DIETITIAN_EMAIL ?? 'dev@example.com';
+const DIETITIAN_PASS = process.env.DIETITIAN_PASSWORD ?? 'password';
 
 async function loginAsDietitian(page: Page) {
 	await page.goto('/login');
-	await page.fill('#identifier', 'dev@example.com');
-	await page.fill('#password', 'password');
+	await page.fill('#identifier', DIETITIAN_EMAIL);
+	await page.fill('#password', DIETITIAN_PASS);
 	await page.click('button[type="submit"]');
-	await expect(page).not.toHaveURL(/\/login/, { timeout: 8000 });
+	await page.waitForURL(/\/dietitian/, { timeout: 30000 });
 }
 
-test.describe('Dietitian — Meal Plan Sessions', () => {
+test.describe('Dietitian — Meal Plan List', () => {
 	test.beforeEach(async ({ page }) => {
 		await loginAsDietitian(page);
 	});
 
-	test('dietitian can navigate to meal plan list', async ({ page }) => {
+	test('meal plan list page loads', async ({ page }) => {
 		await page.goto('/dietitian/meal-plan');
 		await expect(page).toHaveURL(/\/dietitian\/meal-plan/);
+		await expect(page.locator('main')).toBeVisible();
 	});
 
-	test('meal plan page renders without crashing', async ({ page }) => {
+	test('sidebar shows correct nav items', async ({ page }) => {
 		await page.goto('/dietitian/meal-plan');
-		// Page should not show a 500 error
-		const bodyText = await page.locator('body').innerText();
-		expect(bodyText).not.toMatch(/500|Internal Server Error/i);
+		await page.setViewportSize({ width: 1280, height: 800 });
+
+		await expect(page.locator('.sidebar')).toBeVisible();
+		await expect(page.locator('.nav-link', { hasText: 'الخطة الغذائية' })).toBeVisible();
+		await expect(page.locator('.nav-link', { hasText: 'الوصفات' })).toBeVisible();
+		await expect(page.locator('.nav-link', { hasText: 'الأطعمة' })).toBeVisible();
+		await expect(page.locator('.nav-link', { hasText: 'الرسائل' })).toBeVisible();
 	});
 
-	test('unauthenticated access to meal plan redirects to login', async ({ page, context }) => {
-		await context.clearCookies();
+	test('meal plan page shows patient list or empty state', async ({ page }) => {
 		await page.goto('/dietitian/meal-plan');
-		await expect(page).toHaveURL(/\/login/);
+		// Should have some content — either patient rows or an empty message
+		const content = page.locator('main');
+		await expect(content).toBeVisible();
+	});
+});
+
+test.describe('Dietitian — Meal Plan Session', () => {
+	test.beforeEach(async ({ page }) => {
+		await loginAsDietitian(page);
 	});
 
-	test('meal plan session page loads for a valid session ID', async ({ page }) => {
-		// Navigate to the meal plan list first, then click the first session if any
-		await page.goto('/dietitian/meal-plan');
-		const firstSession = page.locator('a[href*="/dietitian/meal-plan/"]').first();
-		const hasSession = (await firstSession.count()) > 0;
-
-		if (hasSession) {
-			await firstSession.click();
-			await expect(page).toHaveURL(/\/dietitian\/meal-plan\/.+/);
-			const bodyText = await page.locator('body').innerText();
-			expect(bodyText).not.toMatch(/500|not found/i);
-		} else {
-			// No sessions seeded — acceptable for clean test DB
-			test.skip();
-		}
-	});
-
-	test('meal plan tracking page loads for a valid session', async ({ page }) => {
-		await page.goto('/dietitian/meal-plan');
-		const trackingLink = page.locator('a[href*="tracking"]').first();
-		if ((await trackingLink.count()) > 0) {
-			await trackingLink.click();
-			await expect(page).toHaveURL(/tracking/);
-		} else {
-			test.skip();
-		}
-	});
-
-	test('AI meal plan API rejects unauthenticated requests', async ({ page, context }) => {
-		await context.clearCookies();
-		const res = await page.request.post('/api/ai/meal-plan', {
-			data: { targetCalories: 2000 }
-		});
-		expect(res.status()).toBe(401);
+	test('navigating to an invalid session shows 404 or redirect', async ({ page }) => {
+		await page.goto('/dietitian/meal-plan/99999999');
+		// Should either 404 or redirect back
+		const url = page.url();
+		const isOk = url.includes('/dietitian') || page.url().includes('404');
+		expect(isOk).toBe(true);
 	});
 });

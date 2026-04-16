@@ -38,16 +38,7 @@ export interface EdamamNutrientResponse {
 	cautions: string[];
 	totalNutrients: Record<string, { label: string; quantity: number; unit: string }>;
 	totalDaily: Record<string, { label: string; quantity: number; unit: string }>;
-	ingredients: {
-		parsed: {
-			foodId: string;
-			food: string;
-			quantity: number;
-			measure: string;
-			weight: number;
-			nutrients: Record<string, { label: string; quantity: number; unit: string }>;
-		}[];
-	}[];
+	ingredients: { parsed: { foodId: string; food: string; quantity: number; measure: string; weight: number; nutrients: Record<string, { label: string; quantity: number; unit: string }> }[] }[];
 }
 
 function getCredentials() {
@@ -62,15 +53,13 @@ export async function searchEdamam(q: string, maxResults = 100): Promise<EdamamH
 	if (!appId || !appKey) return [];
 	try {
 		const all: EdamamHint[] = [];
-		let nextUrl: string | null =
-			`https://api.edamam.com/api/food-database/v2/parser?ingr=${encodeURIComponent(q)}&app_id=${appId}&app_key=${appKey}`;
+		let nextUrl: string | null = `https://api.edamam.com/api/food-database/v2/parser?ingr=${encodeURIComponent(q)}&app_id=${appId}&app_key=${appKey}`;
 		let safety = 0;
 
 		while (nextUrl && all.length < maxResults && safety < 12) {
 			const res: Response = await fetch(nextUrl);
 			if (!res.ok) break;
-			const data: { hints?: EdamamHint[]; _links?: { next?: { href?: string } } } =
-				await res.json();
+			const data: { hints?: EdamamHint[]; _links?: { next?: { href?: string } } } = await res.json();
 			const hints = (data.hints ?? []) as EdamamHint[];
 			all.push(...hints);
 			nextUrl = data?._links?.next?.href ?? null;
@@ -83,10 +72,7 @@ export async function searchEdamam(q: string, maxResults = 100): Promise<EdamamH
 	}
 }
 
-/**
- * Fetch full nutrient breakdown for a food item from Edamam Nutrients API (step 2).
- * Uses the default 100g measure when no measureURI is provided.
- */
+
 export async function fetchNutrients(
 	foodId: string,
 	measureURI?: string,
@@ -123,7 +109,9 @@ export async function fetchNutrients(
  * Flatten the totalNutrients map from a nutrients response into a simple { key: value } record
  * suitable for storing alongside the existing fullNutrients format.
  */
-export function flattenNutrients(nr: EdamamNutrientResponse): Record<string, number | string[]> {
+export function flattenNutrients(
+	nr: EdamamNutrientResponse
+): Record<string, number | string[]> {
 	const flat: Record<string, number | string[]> = {};
 	for (const [key, entry] of Object.entries(nr.totalNutrients)) {
 		flat[key] = Math.round(entry.quantity * 100) / 100;

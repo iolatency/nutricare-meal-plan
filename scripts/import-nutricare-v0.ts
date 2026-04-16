@@ -5,7 +5,7 @@ const DATABASE_URL = process.env.DATABASE_URL;
 const SOURCE = process.env.NUTRICARE_V0_DB;
 
 if (!DATABASE_URL) {
-	console.error('Set DATABASE_URL (target SQLite DB, e.g. file:local.db)');
+	console.error('Set DATABASE_URL (target SQLite DB, e.g. file:/tmp/nutricare.db)');
 	process.exit(1);
 }
 if (!SOURCE) {

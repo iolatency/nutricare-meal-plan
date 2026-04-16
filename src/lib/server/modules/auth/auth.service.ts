@@ -15,6 +15,9 @@ import {
 	refreshAuthSession
 } from './session.repository';
 import type { SessionUser } from './auth.types';
+import { db } from '$lib/server/db';
+import { users } from '$lib/server/db/schema';
+import { eq } from 'drizzle-orm';
 
 export type { SessionUser } from './auth.types';
 
@@ -38,6 +41,18 @@ export async function getUserFromToken(token: string): Promise<SessionUser | nul
 
 	const rolesText = await getMembershipRolesForUser(row.id);
 	const role = membershipRolesToAppRole(rolesText);
+
+	// Fire-and-forget last_seen_at update (does not block response)
+	queueMicrotask(() => {
+		try {
+			db.update(users)
+				.set({ lastSeenAt: new Date().toISOString() })
+				.where(eq(users.id, row.id))
+				.run();
+		} catch {
+			// ignore — presence tracking is best-effort
+		}
+	});
 
 	return {
 		id: row.id,

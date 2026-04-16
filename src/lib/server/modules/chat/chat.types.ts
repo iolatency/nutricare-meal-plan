@@ -18,7 +18,7 @@ export type ChatConversationDTO = {
 };
 
 export type ChatMessageDTO = {
-	id: string;
+	id: number;
 	conversationId: number;
 	senderUserId: number;
 	body: string;

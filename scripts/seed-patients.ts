@@ -7,9 +7,7 @@ import * as schema from '../src/lib/server/db/schema';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {
-	console.error(
-		'DATABASE_URL is not set. Example: DATABASE_URL=file:local.db npx tsx scripts/seed-patients.ts'
-	);
+	console.error('DATABASE_URL is not set. Example: DATABASE_URL=file:/tmp/nutricare.db npx tsx scripts/seed-patients.ts');
 	process.exit(1);
 }
 
@@ -19,7 +17,7 @@ function sqlitePathFromUrl(url: string): string {
 
 const sqlitePath = path.resolve(process.cwd(), sqlitePathFromUrl(DATABASE_URL));
 const client = new Database(sqlitePath);
-client.pragma('journal_mode = WAL');
+client.pragma('journal_mode = DELETE');
 client.pragma('foreign_keys = ON');
 
 const db = drizzle(client, { schema });
@@ -31,6 +29,7 @@ const PATIENT = {
 	username: process.env.SEED_PATIENT_USERNAME ?? 'patient',
 	phone: process.env.SEED_PATIENT_PHONE?.trim() || null
 };
+const DIETITIAN_EMAIL = process.env.SEED_DIETITIAN_EMAIL ?? 'dietitian@example.com';
 
 async function main() {
 	const now = new Date().toISOString();
@@ -41,11 +40,11 @@ async function main() {
 	const devUser = await db
 		.select()
 		.from(schema.users)
-		.where(eq(schema.users.email, 'dev@example.com'))
+		.where(eq(schema.users.email, DIETITIAN_EMAIL))
 		.limit(1);
 
 	if (!devUser[0]) {
-		console.error('Dev dietitian not found. Run npm run db:seed-dev-user first.');
+		console.error(`Dietitian (${DIETITIAN_EMAIL}) not found. Run npm run db:seed-dev-user first.`);
 		process.exit(1);
 	}
 
@@ -131,7 +130,7 @@ async function main() {
 	}
 
 	console.log(
-		`\nDone. Patient: ${p.email} (password: SEED_PATIENT_PASSWORD env or default "password" on first create only)`
+		`\nDone. Patient: ${p.email} (password: ${patientPassword})`
 	);
 }
 

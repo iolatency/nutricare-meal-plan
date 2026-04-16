@@ -18,7 +18,7 @@ export type ChatConversation = {
 };
 
 export type ChatMessage = {
-	id: string;
+	id: number;
 	conversationId: number;
 	senderUserId: number;
 	body: string;
@@ -30,7 +30,7 @@ export type ChatSseEvent =
 	| {
 			type: 'message.created';
 			message: {
-				id: string;
+				id: number;
 				conversationId: number;
 				senderUserId: number;
 				body: string;
@@ -59,9 +59,7 @@ export async function listConversations(): Promise<ChatConversation[]> {
 	return parseJson<ChatConversation[]>(res);
 }
 
-export async function getOrCreateConversation(payload?: {
-	clientId?: number;
-}): Promise<ChatConversation> {
+export async function getOrCreateConversation(payload?: { clientId?: number }): Promise<ChatConversation> {
 	const res = await fetch('/api/chat/conversations/get-or-create', {
 		method: 'POST',
 		credentials: 'include',
@@ -79,9 +77,10 @@ export async function listMessages(
 	if (opts?.limit != null) sp.set('limit', String(opts.limit));
 	if (opts?.offset != null) sp.set('offset', String(opts.offset));
 	const q = sp.toString();
-	const res = await fetch(`/api/chat/conversations/${conversationId}/messages${q ? `?${q}` : ''}`, {
-		credentials: 'include'
-	});
+	const res = await fetch(
+		`/api/chat/conversations/${conversationId}/messages${q ? `?${q}` : ''}`,
+		{ credentials: 'include' }
+	);
 	return parseJson(res);
 }
 
@@ -95,9 +94,7 @@ export async function sendMessage(conversationId: number, body: string): Promise
 	return parseJson<ChatMessage>(res);
 }
 
-export async function markRead(
-	conversationId: number
-): Promise<{ updated: number; readAt: string }> {
+export async function markRead(conversationId: number): Promise<{ updated: number; readAt: string }> {
 	const res = await fetch(`/api/chat/conversations/${conversationId}/mark-read`, {
 		method: 'POST',
 		credentials: 'include'
